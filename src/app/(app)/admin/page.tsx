@@ -35,6 +35,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import React from 'react';
 import { store, notify, useStore, type User } from '@/lib/store';
