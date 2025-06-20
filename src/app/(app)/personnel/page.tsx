@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -49,32 +50,62 @@ import {
 import { Label } from '@/components/ui/label';
 import React from 'react';
 
+const initialEmployees = [
+  {
+    name: 'Alice Bernard',
+    email: 'alice.b@example.com',
+    department: 'Marketing',
+    role: 'Manager',
+  },
+  {
+    name: 'Bob Leclerc',
+    email: 'bob.l@example.com',
+    department: 'Ingénierie',
+    role: 'Développeur Senior',
+  },
+  {
+    name: 'Chloé Dubois',
+    email: 'chloe.d@example.com',
+    department: 'Ventes',
+    role: 'Commercial',
+  },
+];
+
 export default function PersonnelPage() {
-  const [employees, setEmployees] = React.useState([
-    {
-      name: 'Alice Bernard',
-      email: 'alice.b@example.com',
-      department: 'Marketing',
-      role: 'Manager',
-    },
-    {
-      name: 'Bob Leclerc',
-      email: 'bob.l@example.com',
-      department: 'Ingénierie',
-      role: 'Développeur Senior',
-    },
-    {
-      name: 'Chloé Dubois',
-      email: 'chloe.d@example.com',
-      department: 'Ventes',
-      role: 'Commercial',
-    },
-  ]);
+  const [employees, setEmployees] = React.useState(initialEmployees);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
+  const emailInputRef = React.useRef<HTMLInputElement>(null);
+  const departmentInputRef = React.useRef<HTMLInputElement>(null);
+  const roleInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleAddEmployee = (event: React.FormEvent) => {
+    event.preventDefault();
+    const newEmployee = {
+      name: nameInputRef.current?.value || '',
+      email: emailInputRef.current?.value || '',
+      department: departmentInputRef.current?.value || '',
+      role: roleInputRef.current?.value || '',
+    };
+    if (newEmployee.name && newEmployee.email) {
+      setEmployees([...employees, newEmployee]);
+      setIsDialogOpen(false);
+    }
+  };
 
   const handleDeleteEmployee = (email: string) => {
-    console.log('Deleting employee:', email);
     setEmployees(employees.filter((e) => e.email !== email));
   };
+
+  const filteredEmployees = employees.filter(
+    (employee) =>
+      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.role.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card>
@@ -86,7 +117,7 @@ export default function PersonnelPage() {
               Gérez les informations des employés.
             </CardDescription>
           </div>
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -94,65 +125,83 @@ export default function PersonnelPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Ajouter un nouvel employé</DialogTitle>
-                <DialogDescription>
-                  Remplissez les informations ci-dessous pour ajouter un nouvel
-                  employé.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Nom
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="p. ex. Alice Bernard"
-                    className="col-span-3"
-                  />
+              <form onSubmit={handleAddEmployee}>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un nouvel employé</DialogTitle>
+                  <DialogDescription>
+                    Remplissez les informations ci-dessous pour ajouter un nouvel
+                    employé.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Nom
+                    </Label>
+                    <Input
+                      id="name"
+                      ref={nameInputRef}
+                      placeholder="p. ex. Alice Bernard"
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="email" className="text-right">
+                      Email
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      ref={emailInputRef}
+                      placeholder="p. ex. alice.b@example.com"
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="department" className="text-right">
+                      Département
+                    </Label>
+                    <Input
+                      id="department"
+                      ref={departmentInputRef}
+                      placeholder="p. ex. Marketing"
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="role" className="text-right">
+                      Rôle
+                    </Label>
+                    <Input
+                      id="role"
+                      ref={roleInputRef}
+                      placeholder="p. ex. Manager"
+                      className="col-span-3"
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="email" className="text-right">
-                    Email
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="p. ex. alice.b@example.com"
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="department" className="text-right">
-                    Département
-                  </Label>
-                  <Input
-                    id="department"
-                    placeholder="p. ex. Marketing"
-                    className="col-span-3"
-                  />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="role" className="text-right">
-                    Rôle
-                  </Label>
-                  <Input
-                    id="role"
-                    placeholder="p. ex. Manager"
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Sauvegarder</Button>
-              </DialogFooter>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      Annuler
+                    </Button>
+                  </DialogClose>
+                  <Button type="submit">Sauvegarder</Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
         <div className="relative mt-4 w-full max-w-md">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher des employés..." className="pl-8" />
+          <Input
+            placeholder="Rechercher des employés..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -171,15 +220,13 @@ export default function PersonnelPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((employee) => (
+              {filteredEmployees.map((employee) => (
                 <TableRow key={employee.email}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">
                         <AvatarImage
-                          src={`https://placehold.co/40x40.png?text=${employee.name.charAt(
-                            0
-                          )}`}
+                          src={`https://placehold.co/40x40.png`}
                           alt="Avatar"
                           data-ai-hint="person"
                         />

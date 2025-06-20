@@ -11,6 +11,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useRef, type ChangeEvent } from 'react';
+import Papa from 'papaparse';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -70,8 +71,26 @@ export default function AppLayout({
   const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      console.log('Selected file:', file.name);
-      // La logique de parsing du CSV sera ajoutée dans une étape ultérieure.
+      
+      Papa.parse(file, {
+        header: true,
+        complete: (results) => {
+          console.log(`Données CSV importées pour ${pathname}:`, results.data);
+          if (pathname.includes('/recruitment')) {
+            alert(`Importation de ${results.data.length} candidats réussie (voir console).`);
+            // In a real app, you would pass this data to the recruitment page state.
+          } else if (pathname.includes('/personnel')) {
+            alert(`Importation de ${results.data.length} employés réussie (voir console).`);
+            // In a real app, you would pass this data to the personnel page state.
+          } else {
+            alert("L'importation CSV n'est disponible que sur les pages Recrutement et Personnel.");
+          }
+        },
+        error: (error) => {
+          console.error("Erreur d'analyse CSV:", error);
+          alert("Une erreur est survenue lors de l'analyse du fichier CSV.");
+        }
+      });
     }
   };
 

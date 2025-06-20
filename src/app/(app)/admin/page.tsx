@@ -39,6 +39,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import React from 'react';
 
+// Note: For a real app, adding a user would involve more complex logic,
+// including creating an auth user and saving to a database.
+// This is simplified for the frontend prototype.
+
 export default function AdminPage() {
   const [users, setUsers] = React.useState([
     { name: 'Admin User', email: 'admin@example.com', role: 'superadmin' },
@@ -58,7 +62,6 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = (email: string) => {
-    console.log('Deleting user:', email);
     setUsers(users.filter((u) => u.email !== email));
   };
 
@@ -97,9 +100,7 @@ export default function AdminPage() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">
                         <AvatarImage
-                          src={`https://placehold.co/40x40.png?text=${user.name.charAt(
-                            0
-                          )}`}
+                          src={`https://placehold.co/40x40.png`}
                           alt="Avatar"
                           data-ai-hint="person"
                         />
@@ -114,7 +115,7 @@ export default function AdminPage() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role)}>
+                    <Badge variant={getRoleBadgeVariant(user.role) as any}>
                       {user.role}
                     </Badge>
                   </TableCell>

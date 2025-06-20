@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
+  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -49,33 +50,58 @@ import {
 } from '@/components/ui/dropdown-menu';
 import React from 'react';
 
+const initialCandidates = [
+  {
+    name: 'Jean Dupont',
+    position: 'Développeur Frontend',
+    status: 'Entretien',
+    appliedDate: '2023-10-26',
+  },
+  {
+    name: 'Marie Curie',
+    position: 'Chef de projet',
+    status: 'Offre envoyée',
+    appliedDate: '2023-10-22',
+  },
+  {
+    name: 'Pierre Martin',
+    position: 'Designer UI/UX',
+    status: 'Nouveau',
+    appliedDate: '2023-11-01',
+  },
+  {
+    name: 'Sophie Lambert',
+    position: 'Data Scientist',
+    status: 'Rejeté',
+    appliedDate: '2023-10-15',
+  },
+];
+
 export default function RecruitmentPage() {
-  const [candidates, setCandidates] = React.useState([
-    {
-      name: 'Jean Dupont',
-      position: 'Développeur Frontend',
-      status: 'Entretien',
-      appliedDate: '2023-10-26',
-    },
-    {
-      name: 'Marie Curie',
-      position: 'Chef de projet',
-      status: 'Offre envoyée',
-      appliedDate: '2023-10-22',
-    },
-    {
-      name: 'Pierre Martin',
-      position: 'Designer UI/UX',
+  const [candidates, setCandidates] = React.useState(initialCandidates);
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [isDialogOpen, setIsDialogOpen] = React.useState(false);
+
+  const nameInputRef = React.useRef<HTMLInputElement>(null);
+  const positionInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleAddCandidate = (event: React.FormEvent) => {
+    event.preventDefault();
+    const newCandidate = {
+      name: nameInputRef.current?.value || '',
+      position: positionInputRef.current?.value || '',
       status: 'Nouveau',
-      appliedDate: '2023-11-01',
-    },
-    {
-      name: 'Sophie Lambert',
-      position: 'Data Scientist',
-      status: 'Rejeté',
-      appliedDate: '2023-10-15',
-    },
-  ]);
+      appliedDate: new Date().toISOString().split('T')[0],
+    };
+    if (newCandidate.name && newCandidate.position) {
+      setCandidates([newCandidate, ...candidates]);
+      setIsDialogOpen(false);
+    }
+  };
+
+  const handleDeleteCandidate = (candidateName: string) => {
+    setCandidates(candidates.filter((c) => c.name !== candidateName));
+  };
 
   const getBadgeVariant = (status: string) => {
     switch (status) {
@@ -92,10 +118,11 @@ export default function RecruitmentPage() {
     }
   };
 
-  const handleDeleteCandidate = (candidateName: string) => {
-    console.log('Deleting candidate:', candidateName);
-    setCandidates(candidates.filter((c) => c.name !== candidateName));
-  };
+  const filteredCandidates = candidates.filter(
+    (candidate) =>
+      candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.position.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <Card>
@@ -107,7 +134,7 @@ export default function RecruitmentPage() {
               Gérez les candidats tout au long du processus de recrutement.
             </CardDescription>
           </div>
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <PlusCircle className="mr-2 h-4 w-4" />
@@ -115,44 +142,60 @@ export default function RecruitmentPage() {
               </Button>
             </DialogTrigger>
             <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>Ajouter un nouveau candidat</DialogTitle>
-                <DialogDescription>
-                  Remplissez les informations ci-dessous pour ajouter un
-                  nouveau candidat.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="name" className="text-right">
-                    Nom
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="p. ex. Jean Dupont"
-                    className="col-span-3"
-                  />
+              <form onSubmit={handleAddCandidate}>
+                <DialogHeader>
+                  <DialogTitle>Ajouter un nouveau candidat</DialogTitle>
+                  <DialogDescription>
+                    Remplissez les informations ci-dessous pour ajouter un
+                    nouveau candidat.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="name" className="text-right">
+                      Nom
+                    </Label>
+                    <Input
+                      id="name"
+                      ref={nameInputRef}
+                      placeholder="p. ex. Jean Dupont"
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="position" className="text-right">
+                      Poste
+                    </Label>
+                    <Input
+                      id="position"
+                      ref={positionInputRef}
+                      placeholder="p. ex. Développeur Frontend"
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
                 </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="position" className="text-right">
-                    Poste
-                  </Label>
-                  <Input
-                    id="position"
-                    placeholder="p. ex. Développeur Frontend"
-                    className="col-span-3"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button type="submit">Sauvegarder</Button>
-              </DialogFooter>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button type="button" variant="secondary">
+                      Annuler
+                    </Button>
+                  </DialogClose>
+                  <Button type="submit">Sauvegarder</Button>
+                </DialogFooter>
+              </form>
             </DialogContent>
           </Dialog>
         </div>
         <div className="relative mt-4 w-full max-w-md">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Rechercher des candidats..." className="pl-8" />
+          <Input
+            placeholder="Rechercher des candidats..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -172,7 +215,7 @@ export default function RecruitmentPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {candidates.map((candidate) => (
+              {filteredCandidates.map((candidate) => (
                 <TableRow key={candidate.name}>
                   <TableCell className="font-medium">
                     {candidate.name}
@@ -181,7 +224,7 @@ export default function RecruitmentPage() {
                     {candidate.position}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getBadgeVariant(candidate.status)}>
+                    <Badge variant={getBadgeVariant(candidate.status) as any}>
                       {candidate.status}
                     </Badge>
                   </TableCell>

@@ -1,3 +1,5 @@
+'use client';
+
 import {
   Card,
   CardContent,
@@ -15,8 +17,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import React from 'react';
 
 export default function SettingsPage() {
+  const [workWeekMode, setWorkWeekMode] = React.useState('monday-sunday');
+
+  const handleSave = () => {
+    // In a real app, this would save to a database.
+    console.log('Paramètres sauvegardés:', { workWeekMode });
+    alert(`Mode de semaine de travail sauvegardé : ${workWeekMode}`);
+  };
+
   return (
     <div className="grid gap-6">
       <Card>
@@ -29,22 +40,31 @@ export default function SettingsPage() {
         <CardContent>
           <form className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="work-week-mode">Mode de Comptage de la Semaine de Travail</Label>
-              <Select defaultValue="monday-sunday">
+              <Label htmlFor="work-week-mode">
+                Mode de Comptage de la Semaine de Travail
+              </Label>
+              <Select
+                value={workWeekMode}
+                onValueChange={setWorkWeekMode}
+              >
                 <SelectTrigger id="work-week-mode">
                   <SelectValue placeholder="Sélectionner un mode" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="monday-sunday">Lundi - Dimanche</SelectItem>
-                  <SelectItem value="sunday-saturday">Dimanche - Samedi</SelectItem>
-                  <SelectItem value="saturday-friday">Samedi - Vendredi</SelectItem>
+                  <SelectItem value="sunday-saturday">
+                    Dimanche - Samedi
+                  </SelectItem>
+                  <SelectItem value="saturday-friday">
+                    Samedi - Vendredi
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </form>
         </CardContent>
         <CardFooter className="border-t px-6 py-4">
-          <Button>Enregistrer</Button>
+          <Button onClick={handleSave}>Enregistrer</Button>
         </CardFooter>
       </Card>
     </div>
