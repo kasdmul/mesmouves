@@ -4,7 +4,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -578,6 +578,95 @@ function ContractChangeContent() {
   );
 }
 
+type GlobalHistoryItem = {
+  date: string;
+  matricule: string;
+  noms: string;
+  type: string;
+  ancienneValeur: string | number;
+  nouvelleValeur: string | number;
+  motif: string;
+};
+
+function GlobalHistoryContent() {
+  const [history, setHistory] = React.useState<GlobalHistoryItem[]>([]);
+
+  React.useEffect(() => {
+    const salaryHistory = initialSalaryHistory.map(item => ({
+      ...item,
+      type: 'Changement de Salaire',
+    }));
+
+    const functionHistory = initialFunctionHistory.map(item => ({
+      ...item,
+      type: 'Changement de Fonction',
+    }));
+
+    const contractHistory = initialContractHistory.map(item => ({
+      ...item,
+      type: 'Changement de Contrat',
+    }));
+    
+    const allHistory = [...salaryHistory, ...functionHistory, ...contractHistory]
+      .sort((a, b) => {
+        const dateA = new Date(a.date.split('/').reverse().join('-')).getTime();
+        const dateB = new Date(b.date.split('/').reverse().join('-')).getTime();
+        return dateB - dateA;
+      });
+
+    setHistory(allHistory as GlobalHistoryItem[]);
+  }, []);
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) + ' $US';
+  }
+
+  const formatValue = (value: string | number, type: string) => {
+    if (type === 'Changement de Salaire' && typeof value === 'number') {
+      return formatCurrency(value);
+    }
+    return value;
+  };
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Historique Global des Mouvements</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>DATE</TableHead>
+                <TableHead>MATRICULE</TableHead>
+                <TableHead>NOMS</TableHead>
+                <TableHead>TYPE DE MOUVEMENT</TableHead>
+                <TableHead>ANCIENNE VALEUR</TableHead>
+                <TableHead>NOUVELLE VALEUR</TableHead>
+                <TableHead>MOTIF</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {history.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell>{item.date}</TableCell>
+                  <TableCell>{item.matricule}</TableCell>
+                  <TableCell>{item.noms}</TableCell>
+                  <TableCell>{item.type}</TableCell>
+                  <TableCell>{formatValue(item.ancienneValeur, item.type)}</TableCell>
+                  <TableCell>{formatValue(item.nouvelleValeur, item.type)}</TableCell>
+                  <TableCell>{item.motif}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 
 export default function SalaryPageContainer() {
   return (
@@ -591,7 +680,7 @@ export default function SalaryPageContainer() {
         </Button>
       </div>
 
-      <Tabs defaultValue="contrat" className="w-full">
+      <Tabs defaultValue="historique" className="w-full">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="salaire">
             <Landmark className="mr-2 h-4 w-4" />
@@ -605,9 +694,9 @@ export default function SalaryPageContainer() {
             <FileText className="mr-2 h-4 w-4" />
             Contrat
           </TabsTrigger>
-          <TabsTrigger value="historique" disabled>
+          <TabsTrigger value="historique">
             <History className="mr-2 h-4 w-4" />
-            Historique
+            Historique Global
           </TabsTrigger>
         </TabsList>
         <TabsContent value="salaire">
@@ -620,7 +709,7 @@ export default function SalaryPageContainer() {
           <ContractChangeContent />
         </TabsContent>
         <TabsContent value="historique">
-          <div className="p-6">Contenu de la page Historique Global à venir.</div>
+          <GlobalHistoryContent />
         </TabsContent>
       </Tabs>
     </div>
