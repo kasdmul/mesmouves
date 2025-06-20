@@ -44,7 +44,7 @@ const navItems = [
   { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { href: '/recruitment', label: 'Recrutement', icon: Users },
   { href: '/personnel', label: 'Gestion du Personnel', icon: Briefcase },
-  { href: '/salaire', label: 'Mouvement', icon: ArrowRightLeft },
+  { href: '/mouvement', label: 'Mouvement', icon: ArrowRightLeft },
   { href: '/settings', label: 'Paramètres Généraux', icon: Settings },
   { href: '/admin', label: 'Panneau Admin', icon: Shield },
 ];
@@ -53,7 +53,7 @@ const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Tableau de Bord',
   '/recruitment': 'Recrutement',
   '/personnel': 'Gestion du Personnel',
-  '/salaire': 'Mouvement',
+  '/mouvement': 'Mouvement',
   '/settings': 'Paramètres Généraux',
   '/admin': 'Panneau Admin',
 };
