@@ -13,7 +13,7 @@ export type Employee = {
   salaire: number;
   typeContrat: string;
   dateEmbauche: string;
-  periodeEssai: string;
+  periodeEssai: number;
 };
 
 export type Candidate = {

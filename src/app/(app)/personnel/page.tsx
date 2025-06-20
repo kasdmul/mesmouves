@@ -143,7 +143,7 @@ export default function PersonnelPage() {
             dateEmbauche:
               row["Date d'embauche"] ||
               new Date().toLocaleDateString('fr-FR'),
-            periodeEssai: row["Période d'essai"] || 'N/A',
+            periodeEssai: parseInt(row["Période d'essai"] || '0', 10) || 0,
           };
         })
         .filter((e): e is Employee => e !== null);
@@ -189,7 +189,7 @@ export default function PersonnelPage() {
       salaire: 0,
       typeContrat: 'N/A',
       dateEmbauche: hireDate ? format(hireDate, 'dd/MM/yyyy') : '',
-      periodeEssai: periodeEssaiInputRef.current?.value || '',
+      periodeEssai: parseInt(periodeEssaiInputRef.current?.value || '0', 10) || 0,
     };
     if (newEmployee.noms && newEmployee.email && newEmployee.matricule) {
       store.employees.push(newEmployee);
@@ -223,7 +223,7 @@ export default function PersonnelPage() {
       dateEmbauche: editingHireDate
         ? format(editingHireDate, 'dd/MM/yyyy')
         : editingEmployee.dateEmbauche,
-      periodeEssai: formData.get('periodeEssai-edit') as string,
+      periodeEssai: parseInt(formData.get('periodeEssai-edit') as string || '0', 10) || 0,
     };
 
     store.employees = store.employees.map((e) =>
@@ -375,12 +375,13 @@ export default function PersonnelPage() {
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="trial-period" className="text-right">
-                          Période d'essai
+                          Période d'essai (jours)
                         </Label>
                         <Input
                           id="trial-period"
+                          type="number"
                           ref={periodeEssaiInputRef}
-                          placeholder="p. ex. 3 mois"
+                          placeholder="p. ex. 90"
                           className="col-span-3"
                         />
                       </div>
@@ -445,10 +446,10 @@ export default function PersonnelPage() {
                   </TableHead>
                   <TableHead>Poste</TableHead>
                   <TableHead className="hidden lg:table-cell">
-                    Date d'embauche
+                    Date de Début
                   </TableHead>
                   <TableHead className="hidden lg:table-cell">
-                    Période d'essai
+                    Période d'essai (jours)
                   </TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -656,11 +657,12 @@ export default function PersonnelPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="periodeEssai-edit" className="text-right">
-                  Période d'essai
+                  Période d'essai (jours)
                 </Label>
                 <Input
                   id="periodeEssai-edit"
                   name="periodeEssai-edit"
+                  type="number"
                   defaultValue={editingEmployee?.periodeEssai}
                   className="col-span-3"
                 />
