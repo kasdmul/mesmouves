@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,7 +52,17 @@ interface Candidate {
 export default function RecruitmentPage() {
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const { data: candidates, loading, error } = useRealtimeData<Candidate>('candidates');
+
+  const filteredCandidates = useMemo(() => {
+    if (!candidates) return [];
+    return candidates.filter(candidate =>
+      candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      candidate.position.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [candidates, searchTerm]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -84,7 +95,12 @@ export default function RecruitmentPage() {
           <div className="flex justify-between items-center">
             <div className="relative w-full max-w-sm">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Rechercher des candidats..." className="pl-8" />
+              <Input
+                placeholder="Rechercher des candidats..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
@@ -120,14 +136,14 @@ export default function RecruitmentPage() {
                             Erreur de chargement des données.
                         </TableCell>
                     </TableRow>
-                ) : candidates.length === 0 ? (
+                ) : filteredCandidates.length === 0 ? (
                      <TableRow>
                         <TableCell colSpan={4} className="text-center text-muted-foreground">
                             Aucun candidat trouvé.
                         </TableCell>
                     </TableRow>
                 ) : (
-                  candidates.map((candidate) => (
+                  filteredCandidates.map((candidate) => (
                     <TableRow key={candidate.id}>
                       <TableCell>{candidate.name}</TableCell>
                       <TableCell>{candidate.email}</TableCell>

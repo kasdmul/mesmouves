@@ -1,5 +1,7 @@
+
 'use client';
 
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,27 +11,32 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+
 
 export function ChangePasswordDialog() {
   const { toast } = useToast();
+  const [open, setOpen] = useState(false);
 
+  // In a real app, this would handle re-authentication and password update with Firebase.
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    // Logic to change password would go here.
+    
+    // For this prototype, we'll just show a success message.
     toast({
-      title: "Succès",
-      description: "Votre mot de passe a été changé.",
+      title: "Fonctionnalité à venir",
+      description: "La logique de changement de mot de passe sera implémentée ici.",
     });
-    // Need to close the dialog programmatically here.
-    // For now, we'll rely on the user clicking the 'x' or a cancel button.
+    setOpen(false); // Close the dialog
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline">Changer le mot de passe</Button>
       </DialogTrigger>
@@ -77,6 +84,11 @@ export function ChangePasswordDialog() {
             </div>
           </div>
           <DialogFooter>
+             <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                    Annuler
+                </Button>
+            </DialogClose>
             <Button type="submit">Sauvegarder les changements</Button>
           </DialogFooter>
         </form>

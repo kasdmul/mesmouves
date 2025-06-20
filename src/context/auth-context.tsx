@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
@@ -7,7 +8,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { auth, db, firebaseError } from '@/lib/firebase/client';
 import { Loader2, AlertTriangle } from 'lucide-react';
 
-interface UserData {
+export interface UserData {
   role: 'admin' | 'superadmin' | 'user';
   displayName: string;
   email: string;
