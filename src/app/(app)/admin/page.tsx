@@ -1,3 +1,5 @@
+'use client';
+
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -6,7 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -25,13 +26,25 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import React from 'react';
 
 export default function AdminPage() {
-  const users = [
+  const [users, setUsers] = React.useState([
     { name: 'Admin User', email: 'admin@example.com', role: 'superadmin' },
     { name: 'HR Manager', email: 'hr@example.com', role: 'admin' },
     { name: 'Standard User', email: 'user@example.com', role: 'user' },
-  ];
+  ]);
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -42,6 +55,11 @@ export default function AdminPage() {
       default:
         return 'secondary';
     }
+  };
+
+  const handleDeleteUser = (email: string) => {
+    console.log('Deleting user:', email);
+    setUsers(users.filter((u) => u.email !== email));
   };
 
   return (
@@ -78,12 +96,20 @@ export default function AdminPage() {
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">
-                        <AvatarImage src={`https://placehold.co/40x40.png?text=${user.name.charAt(0)}`} alt="Avatar" data-ai-hint="person" />
+                        <AvatarImage
+                          src={`https://placehold.co/40x40.png?text=${user.name.charAt(
+                            0
+                          )}`}
+                          alt="Avatar"
+                          data-ai-hint="person"
+                        />
                         <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="grid gap-0.5">
                         <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {user.email}
+                        </p>
                       </div>
                     </div>
                   </TableCell>
@@ -95,7 +121,11 @@ export default function AdminPage() {
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <Button
+                          aria-haspopup="true"
+                          size="icon"
+                          variant="ghost"
+                        >
                           <MoreHorizontal className="h-4 w-4" />
                           <span className="sr-only">Toggle menu</span>
                         </Button>
@@ -103,10 +133,33 @@ export default function AdminPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem>Modifier le rôle</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Supprimer
-                        </DropdownMenuItem>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                              className="text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Cette action est irréversible. L'utilisateur sera définitivement supprimé.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.email)}
+                              >
+                                Confirmer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
