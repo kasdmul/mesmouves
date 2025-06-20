@@ -71,19 +71,20 @@ export default function AppLayout({
   const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      
+
       Papa.parse(file, {
         header: true,
+        skipEmptyLines: true,
         complete: (results) => {
           console.log(`Données CSV importées pour ${pathname}:`, results.data);
-          if (pathname.includes('/recruitment')) {
-            alert(`Importation de ${results.data.length} candidats réussie (voir console).`);
-            // In a real app, you would pass this data to the recruitment page state.
-          } else if (pathname.includes('/personnel')) {
-            alert(`Importation de ${results.data.length} employés réussie (voir console).`);
-            // In a real app, you would pass this data to the personnel page state.
-          } else {
-            alert("L'importation CSV n'est disponible que sur les pages Recrutement et Personnel.");
+          
+          // Use a custom event to pass data to the active page component
+          const event = new CustomEvent('csvDataLoaded', { detail: results.data });
+          window.dispatchEvent(event);
+
+          // Reset file input so the same file can be selected again
+          if (csvInputRef.current) {
+            csvInputRef.current.value = '';
           }
         },
         error: (error) => {

@@ -50,61 +50,126 @@ import {
 import { Label } from '@/components/ui/label';
 import React from 'react';
 
-const initialEmployees = [
+type Employee = {
+  matricule: string;
+  noms: string;
+  email: string;
+  departement: string;
+  poste: string;
+};
+
+const initialEmployees: Employee[] = [
   {
-    name: 'Alice Bernard',
+    matricule: 'E001',
+    noms: 'Alice Bernard',
     email: 'alice.b@example.com',
-    department: 'Marketing',
-    role: 'Manager',
+    departement: 'Marketing',
+    poste: 'Manager',
   },
   {
-    name: 'Bob Leclerc',
+    matricule: 'E002',
+    noms: 'Bob Leclerc',
     email: 'bob.l@example.com',
-    department: 'Ingénierie',
-    role: 'Développeur Senior',
+    departement: 'Ingénierie',
+    poste: 'Développeur Senior',
   },
   {
-    name: 'Chloé Dubois',
+    matricule: 'E003',
+    noms: 'Chloé Dubois',
     email: 'chloe.d@example.com',
-    department: 'Ventes',
-    role: 'Commercial',
+    departement: 'Ventes',
+    poste: 'Commercial',
   },
 ];
 
 export default function PersonnelPage() {
-  const [employees, setEmployees] = React.useState(initialEmployees);
+  const [employees, setEmployees] = React.useState<Employee[]>(initialEmployees);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
-  const nameInputRef = React.useRef<HTMLInputElement>(null);
+  const matriculeInputRef = React.useRef<HTMLInputElement>(null);
+  const nomsInputRef = React.useRef<HTMLInputElement>(null);
   const emailInputRef = React.useRef<HTMLInputElement>(null);
-  const departmentInputRef = React.useRef<HTMLInputElement>(null);
-  const roleInputRef = React.useRef<HTMLInputElement>(null);
+  const departementInputRef = React.useRef<HTMLInputElement>(null);
+  const posteInputRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    const handleCsvImport = (event: Event) => {
+      // Ensure this is a custom event and we are on the personnel page
+      if (!(event instanceof CustomEvent) || !window.location.pathname.includes('/personnel')) {
+        return;
+      }
+
+      const importedData = event.detail;
+      if (!importedData || !Array.isArray(importedData)) {
+        console.error('Invalid CSV data received');
+        return;
+      }
+      
+      const newEmployees: Employee[] = importedData
+        .map((row: any) => {
+          // Validate that essential columns exist
+          if (!row.Matricule || !row.Noms || !row.Poste) {
+            return null;
+          }
+          return {
+            matricule: row.Matricule,
+            noms: row.Noms,
+            // Generate a dummy email if not present, as it's part of the UI
+            email: row.Email || `${row.Noms.toLowerCase().replace(/\s/g, '.')}@example.com`,
+            departement: row.Département || 'N/A',
+            poste: row.Poste,
+          };
+        })
+        .filter((e): e is Employee => e !== null);
+      
+      // Add new employees, preventing duplicates based on matricule
+      setEmployees((prevEmployees) => {
+        const existingMatricules = new Set(prevEmployees.map(e => e.matricule));
+        const uniqueNewEmployees = newEmployees.filter(ne => !existingMatricules.has(ne.matricule));
+        return [...prevEmployees, ...uniqueNewEmployees];
+      });
+      
+      if (newEmployees.length > 0) {
+        alert(`${newEmployees.length} employé(s) importé(s) avec succès !`);
+      } else {
+         alert("Aucun nouvel employé à importer ou les données sont invalides.");
+      }
+    };
+
+    window.addEventListener('csvDataLoaded', handleCsvImport);
+
+    return () => {
+      window.removeEventListener('csvDataLoaded', handleCsvImport);
+    };
+  }, []); // Empty dependency array means this runs once on mount
+
 
   const handleAddEmployee = (event: React.FormEvent) => {
     event.preventDefault();
-    const newEmployee = {
-      name: nameInputRef.current?.value || '',
+    const newEmployee: Employee = {
+      matricule: matriculeInputRef.current?.value || `E${Math.floor(Math.random() * 1000)}`,
+      noms: nomsInputRef.current?.value || '',
       email: emailInputRef.current?.value || '',
-      department: departmentInputRef.current?.value || '',
-      role: roleInputRef.current?.value || '',
+      departement: departementInputRef.current?.value || '',
+      poste: posteInputRef.current?.value || '',
     };
-    if (newEmployee.name && newEmployee.email) {
+    if (newEmployee.noms && newEmployee.email && newEmployee.matricule) {
       setEmployees([...employees, newEmployee]);
       setIsDialogOpen(false);
     }
   };
 
-  const handleDeleteEmployee = (email: string) => {
-    setEmployees(employees.filter((e) => e.email !== email));
+  const handleDeleteEmployee = (matricule: string) => {
+    setEmployees(employees.filter((e) => e.matricule !== matricule));
   };
 
   const filteredEmployees = employees.filter(
     (employee) =>
-      employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.noms.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.role.toLowerCase().includes(searchTerm.toLowerCase())
+      employee.departement.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.poste.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -135,12 +200,24 @@ export default function PersonnelPage() {
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="matricule" className="text-right">
+                      Matricule
+                    </Label>
+                    <Input
+                      id="matricule"
+                      ref={matriculeInputRef}
+                      placeholder="p. ex. E123"
+                      className="col-span-3"
+                      required
+                    />
+                  </div>
+                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">
                       Nom
                     </Label>
                     <Input
                       id="name"
-                      ref={nameInputRef}
+                      ref={nomsInputRef}
                       placeholder="p. ex. Alice Bernard"
                       className="col-span-3"
                       required
@@ -165,18 +242,18 @@ export default function PersonnelPage() {
                     </Label>
                     <Input
                       id="department"
-                      ref={departmentInputRef}
+                      ref={departementInputRef}
                       placeholder="p. ex. Marketing"
                       className="col-span-3"
                     />
                   </div>
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="role" className="text-right">
-                      Rôle
+                      Poste
                     </Label>
                     <Input
                       id="role"
-                      ref={roleInputRef}
+                      ref={posteInputRef}
                       placeholder="p. ex. Manager"
                       className="col-span-3"
                     />
@@ -213,7 +290,7 @@ export default function PersonnelPage() {
                 <TableHead className="hidden md:table-cell">
                   Département
                 </TableHead>
-                <TableHead>Rôle</TableHead>
+                <TableHead>Poste</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -221,7 +298,7 @@ export default function PersonnelPage() {
             </TableHeader>
             <TableBody>
               {filteredEmployees.map((employee) => (
-                <TableRow key={employee.email}>
+                <TableRow key={employee.matricule}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-9 w-9">
@@ -231,11 +308,11 @@ export default function PersonnelPage() {
                           data-ai-hint="person"
                         />
                         <AvatarFallback>
-                          {employee.name.charAt(0)}
+                          {employee.noms.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="grid gap-0.5">
-                        <p className="font-medium">{employee.name}</p>
+                        <p className="font-medium">{employee.noms}</p>
                         <p className="text-sm text-muted-foreground">
                           {employee.email}
                         </p>
@@ -243,9 +320,9 @@ export default function PersonnelPage() {
                     </div>
                   </TableCell>
                   <TableCell className="hidden md:table-cell">
-                    {employee.department}
+                    {employee.departement}
                   </TableCell>
-                  <TableCell>{employee.role}</TableCell>
+                  <TableCell>{employee.poste}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -282,7 +359,7 @@ export default function PersonnelPage() {
                               <AlertDialogCancel>Annuler</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() =>
-                                  handleDeleteEmployee(employee.email)
+                                  handleDeleteEmployee(employee.matricule)
                                 }
                               >
                                 Confirmer
