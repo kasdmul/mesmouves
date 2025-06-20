@@ -17,7 +17,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { PlusCircle, Search, MoreHorizontal, Trash2 } from 'lucide-react';
+import {
+  PlusCircle,
+  Search,
+  MoreHorizontal,
+  Trash2,
+  Calendar as CalendarIcon,
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Dialog,
@@ -38,7 +44,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
@@ -50,6 +55,14 @@ import {
 import { Label } from '@/components/ui/label';
 import React from 'react';
 import { store, notify, useStore, type Employee } from '@/lib/store';
+import { format } from 'date-fns';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
 
 export default function PersonnelPage() {
   useStore();
@@ -60,11 +73,41 @@ export default function PersonnelPage() {
     null
   );
 
+  // Refs for Add Dialog
   const matriculeInputRef = React.useRef<HTMLInputElement>(null);
   const nomsInputRef = React.useRef<HTMLInputElement>(null);
   const emailInputRef = React.useRef<HTMLInputElement>(null);
   const departementInputRef = React.useRef<HTMLInputElement>(null);
   const posteInputRef = React.useRef<HTMLInputElement>(null);
+  const periodeEssaiInputRef = React.useRef<HTMLInputElement>(null);
+  const [hireDate, setHireDate] = React.useState<Date | undefined>();
+
+  // State for Edit Dialog
+  const [editingHireDate, setEditingHireDate] = React.useState<
+    Date | undefined
+  >();
+
+  React.useEffect(() => {
+    if (editingEmployee && editingEmployee.dateEmbauche) {
+      try {
+        const parts = editingEmployee.dateEmbauche.split('/');
+        const date = new Date(
+          parseInt(parts[2], 10),
+          parseInt(parts[1], 10) - 1,
+          parseInt(parts[0], 10)
+        );
+        if (!isNaN(date.getTime())) {
+          setEditingHireDate(date);
+        } else {
+          setEditingHireDate(undefined);
+        }
+      } catch (e) {
+        setEditingHireDate(undefined);
+      }
+    } else {
+      setEditingHireDate(undefined);
+    }
+  }, [editingEmployee]);
 
   React.useEffect(() => {
     const handleCsvImport = (event: Event) => {
@@ -96,11 +139,17 @@ export default function PersonnelPage() {
             poste: row.Poste,
             salaire: parseFloat(row['Salaire de Base']) || 0,
             typeContrat: row['Type de Contrat'] || 'N/A',
+            dateEmbauche:
+              row["Date d'embauche"] ||
+              new Date().toLocaleDateString('fr-FR'),
+            periodeEssai: row["Période d'essai"] || 'N/A',
           };
         })
         .filter((e): e is Employee => e !== null);
 
-      const existingMatricules = new Set(store.employees.map((e) => e.matricule));
+      const existingMatricules = new Set(
+        store.employees.map((e) => e.matricule)
+      );
       const uniqueNewEmployees = newEmployees.filter(
         (ne) => !existingMatricules.has(ne.matricule)
       );
@@ -138,11 +187,22 @@ export default function PersonnelPage() {
       poste: posteInputRef.current?.value || '',
       salaire: 0,
       typeContrat: 'N/A',
+      dateEmbauche: hireDate ? format(hireDate, 'dd/MM/yyyy') : '',
+      periodeEssai: periodeEssaiInputRef.current?.value || '',
     };
     if (newEmployee.noms && newEmployee.email && newEmployee.matricule) {
       store.employees.push(newEmployee);
       notify();
       setIsAddDialogOpen(false);
+      // Reset fields
+      if (matriculeInputRef.current) matriculeInputRef.current.value = '';
+      if (nomsInputRef.current) nomsInputRef.current.value = '';
+      if (emailInputRef.current) emailInputRef.current.value = '';
+      if (departementInputRef.current) departementInputRef.current.value = '';
+      if (posteInputRef.current) posteInputRef.current.value = '';
+      if (periodeEssaiInputRef.current)
+        periodeEssaiInputRef.current.value = '';
+      setHireDate(undefined);
     }
   };
 
@@ -159,6 +219,10 @@ export default function PersonnelPage() {
       email: formData.get('email-edit') as string,
       departement: formData.get('departement-edit') as string,
       poste: formData.get('poste-edit') as string,
+      dateEmbauche: editingHireDate
+        ? format(editingHireDate, 'dd/MM/yyyy')
+        : editingEmployee.dateEmbauche,
+      periodeEssai: formData.get('periodeEssai-edit') as string,
     };
 
     store.employees = store.employees.map((e) =>
@@ -277,6 +341,48 @@ export default function PersonnelPage() {
                           className="col-span-3"
                         />
                       </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="hire-date" className="text-right">
+                          Date d'embauche
+                        </Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={'outline'}
+                              className={cn(
+                                'col-span-3 justify-start text-left font-normal',
+                                !hireDate && 'text-muted-foreground'
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {hireDate ? (
+                                format(hireDate, 'dd/MM/yyyy')
+                              ) : (
+                                <span>Choisir une date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={hireDate}
+                              onSelect={setHireDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="trial-period" className="text-right">
+                          Période d'essai
+                        </Label>
+                        <Input
+                          id="trial-period"
+                          ref={periodeEssaiInputRef}
+                          placeholder="p. ex. 3 mois"
+                          className="col-span-3"
+                        />
+                      </div>
                     </div>
                     <DialogFooter>
                       <DialogClose asChild>
@@ -337,6 +443,12 @@ export default function PersonnelPage() {
                     Département
                   </TableHead>
                   <TableHead>Poste</TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    Date d'embauche
+                  </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    Période d'essai
+                  </TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -369,6 +481,12 @@ export default function PersonnelPage() {
                       {employee.departement}
                     </TableCell>
                     <TableCell>{employee.poste}</TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {employee.dateEmbauche}
+                    </TableCell>
+                    <TableCell className="hidden lg:table-cell">
+                      {employee.periodeEssai}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -501,6 +619,48 @@ export default function PersonnelPage() {
                   id="poste-edit"
                   name="poste-edit"
                   defaultValue={editingEmployee?.poste}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="hire-date-edit" className="text-right">
+                  Date d'embauche
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={'outline'}
+                      className={cn(
+                        'col-span-3 justify-start text-left font-normal',
+                        !editingHireDate && 'text-muted-foreground'
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {editingHireDate ? (
+                        format(editingHireDate, 'dd/MM/yyyy')
+                      ) : (
+                        <span>Choisir une date</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={editingHireDate}
+                      onSelect={setEditingHireDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="periodeEssai-edit" className="text-right">
+                  Période d'essai
+                </Label>
+                <Input
+                  id="periodeEssai-edit"
+                  name="periodeEssai-edit"
+                  defaultValue={editingEmployee?.periodeEssai}
                   className="col-span-3"
                 />
               </div>
