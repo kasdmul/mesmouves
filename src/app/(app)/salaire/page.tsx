@@ -84,16 +84,6 @@ function SalaryChangeContent() {
 
   const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
 
-  React.useEffect(() => {
-    if (initialSalaryHistory.length > 0) {
-      const firstHistoryItem = initialSalaryHistory[0];
-      setSelectedMatricule(firstHistoryItem.matricule);
-      setDate(new Date('2025-06-20T00:00:00'));
-      setNewSalary(String(firstHistoryItem.nouvelleValeur));
-      setReason(firstHistoryItem.motif);
-    }
-  }, []);
-
   const handleApplyChange = () => {
     if (!selectedEmployee || !newSalary || !reason || !date) {
       alert('Veuillez remplir tous les champs obligatoires.');
@@ -264,16 +254,6 @@ function FunctionChangeContent() {
 
   const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
 
-  React.useEffect(() => {
-    if (initialFunctionHistory.length > 0) {
-      const firstHistoryItem = initialFunctionHistory[0];
-      setSelectedMatricule(firstHistoryItem.matricule);
-      setDate(new Date('2025-06-20T00:00:00'));
-      setNewFunction(firstHistoryItem.nouvelleValeur);
-      setReason(firstHistoryItem.motif);
-    }
-  }, []);
-
   const handleApplyChange = () => {
     if (!selectedEmployee || !newFunction || !reason || !date) {
       alert('Veuillez remplir tous les champs obligatoires.');
@@ -433,16 +413,6 @@ function ContractChangeContent() {
   const [newDepartment, setNewDepartment] = React.useState('');
 
   const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
-
-  React.useEffect(() => {
-    if (initialContractHistory.length > 0) {
-      const firstHistoryItem = initialContractHistory[0];
-      setSelectedMatricule(firstHistoryItem.matricule);
-      setDate(new Date('2025-06-20T00:00:00'));
-      setNewContractType(firstHistoryItem.nouvelleValeur);
-      setReason(firstHistoryItem.motif.split(' (')[0]);
-    }
-  }, []);
 
   const handleApplyChange = () => {
     if (!selectedEmployee || !newContractType || !reason || !date) {
