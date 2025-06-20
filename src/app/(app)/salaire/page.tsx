@@ -77,9 +77,9 @@ function SalaryChangeContent() {
   const [history, setHistory] = React.useState<SalaryChange[]>(initialSalaryHistory);
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
   
-  const [date, setDate] = React.useState<Date | undefined>(new Date('2025-06-20T00:00:00'));
-  const [newSalary, setNewSalary] = React.useState('3500');
-  const [reason, setReason] = React.useState('ajustement salaire');
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [newSalary, setNewSalary] = React.useState('');
+  const [reason, setReason] = React.useState('');
   const [newDepartment, setNewDepartment] = React.useState('');
 
   const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
@@ -88,6 +88,9 @@ function SalaryChangeContent() {
     if (initialSalaryHistory.length > 0) {
       const firstHistoryItem = initialSalaryHistory[0];
       setSelectedMatricule(firstHistoryItem.matricule);
+      setDate(new Date('2025-06-20T00:00:00'));
+      setNewSalary(String(firstHistoryItem.nouvelleValeur));
+      setReason(firstHistoryItem.motif);
     }
   }, []);
 
@@ -120,6 +123,13 @@ function SalaryChangeContent() {
           : emp
       )
     );
+
+    // Réinitialiser les champs
+    setSelectedMatricule(undefined);
+    setDate(new Date());
+    setNewSalary('');
+    setReason('');
+    setNewDepartment('');
   };
 
   const formatCurrency = (value: number) => {
@@ -247,9 +257,9 @@ function FunctionChangeContent() {
   const [history, setHistory] = React.useState<FunctionChange[]>(initialFunctionHistory);
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
   
-  const [date, setDate] = React.useState<Date | undefined>(new Date('2025-06-20T00:00:00'));
-  const [newFunction, setNewFunction] = React.useState('chief driver');
-  const [reason, setReason] = React.useState('promotion');
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [newFunction, setNewFunction] = React.useState('');
+  const [reason, setReason] = React.useState('');
   const [newDepartment, setNewDepartment] = React.useState('');
 
   const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
@@ -258,6 +268,9 @@ function FunctionChangeContent() {
     if (initialFunctionHistory.length > 0) {
       const firstHistoryItem = initialFunctionHistory[0];
       setSelectedMatricule(firstHistoryItem.matricule);
+      setDate(new Date('2025-06-20T00:00:00'));
+      setNewFunction(firstHistoryItem.nouvelleValeur);
+      setReason(firstHistoryItem.motif);
     }
   }, []);
 
@@ -284,6 +297,13 @@ function FunctionChangeContent() {
           : emp
       )
     );
+
+    // Réinitialiser les champs
+    setSelectedMatricule(undefined);
+    setDate(new Date());
+    setNewFunction('');
+    setReason('');
+    setNewDepartment('');
   };
 
   return (
@@ -407,9 +427,9 @@ function ContractChangeContent() {
   const [history, setHistory] = React.useState<ContractChange[]>(initialContractHistory);
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
   
-  const [date, setDate] = React.useState<Date | undefined>(new Date('2025-06-20T00:00:00'));
-  const [newContractType, setNewContractType] = React.useState<string | undefined>('CDD');
-  const [reason, setReason] = React.useState('pas de motif');
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [newContractType, setNewContractType] = React.useState<string | undefined>();
+  const [reason, setReason] = React.useState('');
   const [newDepartment, setNewDepartment] = React.useState('');
 
   const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
@@ -418,6 +438,9 @@ function ContractChangeContent() {
     if (initialContractHistory.length > 0) {
       const firstHistoryItem = initialContractHistory[0];
       setSelectedMatricule(firstHistoryItem.matricule);
+      setDate(new Date('2025-06-20T00:00:00'));
+      setNewContractType(firstHistoryItem.nouvelleValeur);
+      setReason(firstHistoryItem.motif.split(' (')[0]);
     }
   }, []);
 
@@ -450,6 +473,13 @@ function ContractChangeContent() {
           : emp
       )
     );
+
+    // Réinitialiser les champs
+    setSelectedMatricule(undefined);
+    setDate(new Date());
+    setNewContractType(undefined);
+    setReason('');
+    setNewDepartment('');
   };
 
   return (
