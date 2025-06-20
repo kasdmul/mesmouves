@@ -135,6 +135,14 @@ export default function PersonnelPage() {
     store.employees = store.employees.filter((e) => e.matricule !== matricule);
     notify();
   };
+  
+  const handleDeleteAllEmployees = () => {
+    store.employees = [];
+    store.salaryHistory = [];
+    store.functionHistory = [];
+    store.contractHistory = [];
+    notify();
+  };
 
   const filteredEmployees = store.employees.filter(
     (employee) =>
@@ -154,94 +162,118 @@ export default function PersonnelPage() {
               Gérez les informations des employés.
             </CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ajouter un employé
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <form onSubmit={handleAddEmployee}>
-                <DialogHeader>
-                  <DialogTitle>Ajouter un nouvel employé</DialogTitle>
-                  <DialogDescription>
-                    Remplissez les informations ci-dessous pour ajouter un nouvel
-                    employé.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="matricule" className="text-right">
-                      Matricule
-                    </Label>
-                    <Input
-                      id="matricule"
-                      ref={matriculeInputRef}
-                      placeholder="p. ex. E123"
-                      className="col-span-3"
-                      required
-                    />
+          <div className="flex items-center gap-2">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Ajouter un employé
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <form onSubmit={handleAddEmployee}>
+                  <DialogHeader>
+                    <DialogTitle>Ajouter un nouvel employé</DialogTitle>
+                    <DialogDescription>
+                      Remplissez les informations ci-dessous pour ajouter un nouvel
+                      employé.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="matricule" className="text-right">
+                        Matricule
+                      </Label>
+                      <Input
+                        id="matricule"
+                        ref={matriculeInputRef}
+                        placeholder="p. ex. E123"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                     <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">
+                        Nom
+                      </Label>
+                      <Input
+                        id="name"
+                        ref={nomsInputRef}
+                        placeholder="p. ex. Alice Bernard"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="email" className="text-right">
+                        Email
+                      </Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        ref={emailInputRef}
+                        placeholder="p. ex. alice.b@example.com"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="department" className="text-right">
+                        Département
+                      </Label>
+                      <Input
+                        id="department"
+                        ref={departementInputRef}
+                        placeholder="p. ex. Marketing"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="role" className="text-right">
+                        Poste
+                      </Label>
+                      <Input
+                        id="role"
+                        ref={posteInputRef}
+                        placeholder="p. ex. Manager"
+                        className="col-span-3"
+                      />
+                    </div>
                   </div>
-                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Nom
-                    </Label>
-                    <Input
-                      id="name"
-                      ref={nomsInputRef}
-                      placeholder="p. ex. Alice Bernard"
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      ref={emailInputRef}
-                      placeholder="p. ex. alice.b@example.com"
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="department" className="text-right">
-                      Département
-                    </Label>
-                    <Input
-                      id="department"
-                      ref={departementInputRef}
-                      placeholder="p. ex. Marketing"
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="role" className="text-right">
-                      Poste
-                    </Label>
-                    <Input
-                      id="role"
-                      ref={posteInputRef}
-                      placeholder="p. ex. Manager"
-                      className="col-span-3"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">
-                      Annuler
-                    </Button>
-                  </DialogClose>
-                  <Button type="submit">Sauvegarder</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">
+                        Annuler
+                      </Button>
+                    </DialogClose>
+                    <Button type="submit">Sauvegarder</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Tout supprimer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. Cela supprimera définitivement tous les employés et leur historique associé.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAllEmployees}>
+                    Confirmer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
         <div className="relative mt-4 w-full max-w-md">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />

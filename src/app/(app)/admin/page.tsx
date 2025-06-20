@@ -38,17 +38,15 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import React from 'react';
+import { store, notify, useStore } from '@/lib/store';
+
 
 // Note: For a real app, adding a user would involve more complex logic,
 // including creating an auth user and saving to a database.
 // This is simplified for the frontend prototype.
 
 export default function AdminPage() {
-  const [users, setUsers] = React.useState([
-    { name: 'Admin User', email: 'admin@example.com', role: 'superadmin' },
-    { name: 'HR Manager', email: 'hr@example.com', role: 'admin' },
-    { name: 'Standard User', email: 'user@example.com', role: 'user' },
-  ]);
+  useStore();
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -62,7 +60,13 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = (email: string) => {
-    setUsers(users.filter((u) => u.email !== email));
+    store.users = store.users.filter((u) => u.email !== email);
+    notify();
+  };
+  
+  const handleDeleteAllUsers = () => {
+    store.users = [];
+    notify();
   };
 
   return (
@@ -75,10 +79,34 @@ export default function AdminPage() {
               Gérez les utilisateurs et leurs permissions.
             </CardDescription>
           </div>
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Ajouter un utilisateur
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Ajouter un utilisateur
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Tout supprimer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                     Cette action est irréversible. Cela supprimera définitivement tous les utilisateurs.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAllUsers}>
+                    Confirmer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -94,7 +122,7 @@ export default function AdminPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {store.users.map((user) => (
                 <TableRow key={user.email}>
                   <TableCell>
                     <div className="flex items-center gap-3">

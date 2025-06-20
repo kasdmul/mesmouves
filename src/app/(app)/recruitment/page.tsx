@@ -49,36 +49,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import React from 'react';
-
-const initialCandidates = [
-  {
-    name: 'Jean Dupont',
-    position: 'Développeur Frontend',
-    status: 'Entretien',
-    appliedDate: '2023-10-26',
-  },
-  {
-    name: 'Marie Curie',
-    position: 'Chef de projet',
-    status: 'Offre envoyée',
-    appliedDate: '2023-10-22',
-  },
-  {
-    name: 'Pierre Martin',
-    position: 'Designer UI/UX',
-    status: 'Nouveau',
-    appliedDate: '2023-11-01',
-  },
-  {
-    name: 'Sophie Lambert',
-    position: 'Data Scientist',
-    status: 'Rejeté',
-    appliedDate: '2023-10-15',
-  },
-];
+import { store, notify, useStore, type Candidate } from '@/lib/store';
 
 export default function RecruitmentPage() {
-  const [candidates, setCandidates] = React.useState(initialCandidates);
+  useStore();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
@@ -87,20 +61,27 @@ export default function RecruitmentPage() {
 
   const handleAddCandidate = (event: React.FormEvent) => {
     event.preventDefault();
-    const newCandidate = {
+    const newCandidate: Candidate = {
       name: nameInputRef.current?.value || '',
       position: positionInputRef.current?.value || '',
       status: 'Nouveau',
       appliedDate: new Date().toISOString().split('T')[0],
     };
     if (newCandidate.name && newCandidate.position) {
-      setCandidates([newCandidate, ...candidates]);
+      store.candidates.unshift(newCandidate);
+      notify();
       setIsDialogOpen(false);
     }
   };
 
   const handleDeleteCandidate = (candidateName: string) => {
-    setCandidates(candidates.filter((c) => c.name !== candidateName));
+    store.candidates = store.candidates.filter((c) => c.name !== candidateName);
+    notify();
+  };
+
+  const handleDeleteAllCandidates = () => {
+    store.candidates = [];
+    notify();
   };
 
   const getBadgeVariant = (status: string) => {
@@ -118,7 +99,7 @@ export default function RecruitmentPage() {
     }
   };
 
-  const filteredCandidates = candidates.filter(
+  const filteredCandidates = store.candidates.filter(
     (candidate) =>
       candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       candidate.position.toLowerCase().includes(searchTerm.toLowerCase())
@@ -134,59 +115,83 @@ export default function RecruitmentPage() {
               Gérez les candidats tout au long du processus de recrutement.
             </CardDescription>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ajouter un Candidat
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <form onSubmit={handleAddCandidate}>
-                <DialogHeader>
-                  <DialogTitle>Ajouter un nouveau candidat</DialogTitle>
-                  <DialogDescription>
-                    Remplissez les informations ci-dessous pour ajouter un
-                    nouveau candidat.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
-                      Nom
-                    </Label>
-                    <Input
-                      id="name"
-                      ref={nameInputRef}
-                      placeholder="p. ex. Jean Dupont"
-                      className="col-span-3"
-                      required
-                    />
+          <div className="flex items-center gap-2">
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Ajouter un Candidat
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <form onSubmit={handleAddCandidate}>
+                  <DialogHeader>
+                    <DialogTitle>Ajouter un nouveau candidat</DialogTitle>
+                    <DialogDescription>
+                      Remplissez les informations ci-dessous pour ajouter un
+                      nouveau candidat.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">
+                        Nom
+                      </Label>
+                      <Input
+                        id="name"
+                        ref={nameInputRef}
+                        placeholder="p. ex. Jean Dupont"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="position" className="text-right">
+                        Poste
+                      </Label>
+                      <Input
+                        id="position"
+                        ref={positionInputRef}
+                        placeholder="p. ex. Développeur Frontend"
+                        className="col-span-3"
+                        required
+                      />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="position" className="text-right">
-                      Poste
-                    </Label>
-                    <Input
-                      id="position"
-                      ref={positionInputRef}
-                      placeholder="p. ex. Développeur Frontend"
-                      className="col-span-3"
-                      required
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button type="button" variant="secondary">
-                      Annuler
-                    </Button>
-                  </DialogClose>
-                  <Button type="submit">Sauvegarder</Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button type="button" variant="secondary">
+                        Annuler
+                      </Button>
+                    </DialogClose>
+                    <Button type="submit">Sauvegarder</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Tout supprimer
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Cette action est irréversible. Cela supprimera définitivement tous les candidats.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAllCandidates}>
+                    Confirmer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
         <div className="relative mt-4 w-full max-w-md">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
