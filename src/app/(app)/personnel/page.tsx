@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -141,9 +142,10 @@ export default function PersonnelPage() {
             salaire: parseFloat(row['Salaire de Base']) || 0,
             typeContrat: row['Type de Contrat'] || 'N/A',
             dateEmbauche:
+              row['Date de Début'] ||
               row["Date d'embauche"] ||
-              new Date().toLocaleDateString('fr-FR'),
-            periodeEssai: parseInt(row["Période d'essai"] || '0', 10) || 0,
+              format(new Date(), 'dd/MM/yyyy'),
+            periodeEssai: parseInt(row["Période d'essai (jours)"] || row["Période d'essai"] || '0', 10) || 0,
           };
         })
         .filter((e): e is Employee => e !== null);
@@ -189,7 +191,7 @@ export default function PersonnelPage() {
       salaire: 0,
       typeContrat: 'N/A',
       dateEmbauche: hireDate ? format(hireDate, 'dd/MM/yyyy') : '',
-      periodeEssai: parseInt(periodeEssaiInputRef.current?.value || '0', 10) || 0,
+      periodeEssai: parseInt(periodeEssaiInputRef.current?.value || '0', 10),
     };
     if (newEmployee.noms && newEmployee.email && newEmployee.matricule) {
       store.employees.push(newEmployee);
@@ -223,7 +225,7 @@ export default function PersonnelPage() {
       dateEmbauche: editingHireDate
         ? format(editingHireDate, 'dd/MM/yyyy')
         : editingEmployee.dateEmbauche,
-      periodeEssai: parseInt(formData.get('periodeEssai-edit') as string || '0', 10) || 0,
+      periodeEssai: parseInt(formData.get('periodeEssai-edit') as string || '0', 10),
     };
 
     store.employees = store.employees.map((e) =>
@@ -407,7 +409,7 @@ export default function PersonnelPage() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>
-                      Êtes-vous absolument sûr ?
+                      Êtes-vous absolutely sûr ?
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                       Cette action est irréversible. Cela supprimera
