@@ -145,7 +145,7 @@ export default function PersonnelPage() {
               row['Date de Début'] ||
               row["Date d'embauche"] ||
               format(new Date(), 'dd/MM/yyyy'),
-            periodeEssai: parseInt(row["Période d'essai (jours)"] || row["Période d'essai"] || '0', 10) || 0,
+            periodeEssai: parseInt(row["Période d'essai (mois)"] || row["Période d'essai (jours)"] || row["Période d'essai"] || '0', 10) || 0,
           };
         })
         .filter((e): e is Employee => e !== null);
@@ -377,13 +377,13 @@ export default function PersonnelPage() {
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="trial-period" className="text-right">
-                          Période d'essai (jours)
+                          Période d'essai (mois)
                         </Label>
                         <Input
                           id="trial-period"
                           type="number"
                           ref={periodeEssaiInputRef}
-                          placeholder="p. ex. 90"
+                          placeholder="p. ex. 3"
                           className="col-span-3"
                         />
                       </div>
@@ -451,7 +451,7 @@ export default function PersonnelPage() {
                     Date de Début
                   </TableHead>
                   <TableHead className="hidden lg:table-cell">
-                    Période d'essai (jours)
+                    Période d'essai (mois)
                   </TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -659,7 +659,7 @@ export default function PersonnelPage() {
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="periodeEssai-edit" className="text-right">
-                  Période d'essai (jours)
+                  Période d'essai (mois)
                 </Label>
                 <Input
                   id="periodeEssai-edit"
