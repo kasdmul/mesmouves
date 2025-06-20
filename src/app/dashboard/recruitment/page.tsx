@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,26 +34,40 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, Loader2 } from 'lucide-react';
 import { CandidateForm } from '@/components/dashboard/candidate-form';
 import { useToast } from '@/hooks/use-toast';
+import { useRealtimeData } from '@/hooks/use-realtime-data';
+import { db } from '@/lib/firebase/client';
+import { doc, deleteDoc } from 'firebase/firestore';
 
-const candidates = [
-  { id: 1, name: 'Jean Dupont', email: 'jean.d@example.com', position: 'Senior Frontend Engineer' },
-  { id: 2, name: 'Marie Curie', email: 'marie.c@example.com', position: 'Product Manager' },
-  { id: 3, name: 'Pierre Martin', email: 'pierre.m@example.com', position: 'UX/UI Designer' },
-];
+interface Candidate {
+    id: string;
+    name: string;
+    email: string;
+    position: string;
+}
 
 export default function RecruitmentPage() {
   const { toast } = useToast();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const { data: candidates, loading, error } = useRealtimeData<Candidate>('candidates');
 
-  const handleDelete = (id: number) => {
-    // Logic to delete candidate would go here
-    console.log(`Deleting candidate with id: ${id}`);
-    toast({
-      title: "Succès",
-      description: "Le candidat a été supprimé.",
-    });
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'candidates', id));
+      toast({
+        title: "Succès",
+        description: "Le candidat a été supprimé.",
+      });
+    } catch (e) {
+        console.error("Error deleting document: ", e);
+        toast({
+            variant: "destructive",
+            title: "Erreur",
+            description: "La suppression du candidat a échoué.",
+        });
+    }
   };
 
   return (
@@ -71,12 +86,12 @@ export default function RecruitmentPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Rechercher des candidats..." className="pl-8" />
             </div>
-            <Dialog>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button>Ajouter un Candidat</Button>
               </DialogTrigger>
               <DialogContent className="sm:max-w-md">
-                <CandidateForm />
+                <CandidateForm onFinished={() => setDialogOpen(false)} />
               </DialogContent>
             </Dialog>
           </div>
@@ -91,36 +106,58 @@ export default function RecruitmentPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {candidates.map((candidate) => (
-                  <TableRow key={candidate.id}>
-                    <TableCell>{candidate.name}</TableCell>
-                    <TableCell>{candidate.email}</TableCell>
-                    <TableCell>{candidate.position}</TableCell>
-                    <TableCell className="text-right">
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Cette action ne peut pas être annulée. Cela supprimera définitivement le candidat.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(candidate.id)}>
-                              Supprimer
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {loading ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center">
+                            <div className="flex justify-center items-center p-4">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                        </TableCell>
+                    </TableRow>
+                ) : error ? (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center text-destructive">
+                            Erreur de chargement des données.
+                        </TableCell>
+                    </TableRow>
+                ) : candidates.length === 0 ? (
+                     <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                            Aucun candidat trouvé.
+                        </TableCell>
+                    </TableRow>
+                ) : (
+                  candidates.map((candidate) => (
+                    <TableRow key={candidate.id}>
+                      <TableCell>{candidate.name}</TableCell>
+                      <TableCell>{candidate.email}</TableCell>
+                      <TableCell>{candidate.position}</TableCell>
+                      <TableCell className="text-right">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Cette action ne peut pas être annulée. Cela supprimera définitivement le candidat.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annuler</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(candidate.id)}>
+                                Supprimer
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
