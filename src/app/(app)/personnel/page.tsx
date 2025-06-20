@@ -49,41 +49,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import React from 'react';
-
-type Employee = {
-  matricule: string;
-  noms: string;
-  email: string;
-  departement: string;
-  poste: string;
-};
-
-const initialEmployees: Employee[] = [
-  {
-    matricule: 'E001',
-    noms: 'Alice Bernard',
-    email: 'alice.b@example.com',
-    departement: 'Marketing',
-    poste: 'Manager',
-  },
-  {
-    matricule: 'E002',
-    noms: 'Bob Leclerc',
-    email: 'bob.l@example.com',
-    departement: 'Ingénierie',
-    poste: 'Développeur Senior',
-  },
-  {
-    matricule: 'E003',
-    noms: 'Chloé Dubois',
-    email: 'chloe.d@example.com',
-    departement: 'Ventes',
-    poste: 'Commercial',
-  },
-];
+import { store, notify, useStore, type Employee } from '@/lib/store';
 
 export default function PersonnelPage() {
-  const [employees, setEmployees] = React.useState<Employee[]>(initialEmployees);
+  useStore(); // Subscribe to store updates
+
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
 
@@ -95,7 +65,6 @@ export default function PersonnelPage() {
 
   React.useEffect(() => {
     const handleCsvImport = (event: Event) => {
-      // Ensure this is a custom event and we are on the personnel page
       if (!(event instanceof CustomEvent) || !window.location.pathname.includes('/personnel')) {
         return;
       }
@@ -107,33 +76,32 @@ export default function PersonnelPage() {
       }
       
       const newEmployees: Employee[] = importedData
-        .map((row: any) => {
-          // Validate that essential columns exist
+        .map((row: any): Employee | null => {
           if (!row.Matricule || !row.Noms || !row.Poste) {
             return null;
           }
           return {
             matricule: row.Matricule,
             noms: row.Noms,
-            // Generate a dummy email if not present, as it's part of the UI
             email: row.Email || `${row.Noms.toLowerCase().replace(/\s/g, '.')}@example.com`,
             departement: row.Département || 'N/A',
             poste: row.Poste,
+            salaire: parseFloat(row['Salaire de Base']) || 0,
+            typeContrat: row['Type de Contrat'] || 'N/A',
           };
         })
         .filter((e): e is Employee => e !== null);
       
-      // Add new employees, preventing duplicates based on matricule
-      setEmployees((prevEmployees) => {
-        const existingMatricules = new Set(prevEmployees.map(e => e.matricule));
-        const uniqueNewEmployees = newEmployees.filter(ne => !existingMatricules.has(ne.matricule));
-        return [...prevEmployees, ...uniqueNewEmployees];
-      });
+      const existingMatricules = new Set(store.employees.map(e => e.matricule));
+      const uniqueNewEmployees = newEmployees.filter(ne => !existingMatricules.has(ne.matricule));
       
-      if (newEmployees.length > 0) {
-        alert(`${newEmployees.length} employé(s) importé(s) avec succès !`);
+      store.employees.push(...uniqueNewEmployees);
+      notify(); // Notify all components about the state change
+      
+      if (uniqueNewEmployees.length > 0) {
+        alert(`${uniqueNewEmployees.length} employé(s) importé(s) avec succès !`);
       } else {
-         alert("Aucun nouvel employé à importer ou les données sont invalides.");
+         alert("Aucun nouvel employé à importer ou les données sont invalides/dupliquées.");
       }
     };
 
@@ -142,7 +110,7 @@ export default function PersonnelPage() {
     return () => {
       window.removeEventListener('csvDataLoaded', handleCsvImport);
     };
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
 
   const handleAddEmployee = (event: React.FormEvent) => {
@@ -153,18 +121,22 @@ export default function PersonnelPage() {
       email: emailInputRef.current?.value || '',
       departement: departementInputRef.current?.value || '',
       poste: posteInputRef.current?.value || '',
+      salaire: 0, // Default value
+      typeContrat: 'N/A', // Default value
     };
     if (newEmployee.noms && newEmployee.email && newEmployee.matricule) {
-      setEmployees([...employees, newEmployee]);
+      store.employees.push(newEmployee);
+      notify();
       setIsDialogOpen(false);
     }
   };
 
   const handleDeleteEmployee = (matricule: string) => {
-    setEmployees(employees.filter((e) => e.matricule !== matricule));
+    store.employees = store.employees.filter((e) => e.matricule !== matricule);
+    notify();
   };
 
-  const filteredEmployees = employees.filter(
+  const filteredEmployees = store.employees.filter(
     (employee) =>
       employee.noms.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||

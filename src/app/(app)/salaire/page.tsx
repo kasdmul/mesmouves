@@ -15,74 +15,26 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Calendar as CalendarIcon, DollarSign, Plus, Briefcase, FileText, History, Landmark } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-
-type Employee = {
-  matricule: string;
-  noms: string;
-  departement: string;
-  salaire: number;
-  poste: string;
-  typeContrat: string;
-};
-
-type SalaryChange = {
-  date: string;
-  matricule: string;
-  noms: string;
-  ancienneValeur: number;
-  nouvelleValeur: number;
-  motif: string;
-};
-
-type FunctionChange = {
-  date: string;
-  matricule: string;
-  noms: string;
-  ancienneValeur: string;
-  nouvelleValeur: string;
-  motif: string;
-};
-
-type ContractChange = {
-  date: string;
-  matricule: string;
-  noms: string;
-  ancienneValeur: string;
-  nouvelleValeur: string;
-  motif: string;
-};
-
-const initialEmployees: Employee[] = [
-  { matricule: '21072', noms: 'John TSHIAMALA', departement: 'Ventes', salaire: 3000, poste: 'Manager', typeContrat: 'CDI' },
-  { matricule: 'E001', noms: 'Alice Bernard', departement: 'Marketing', salaire: 2800, poste: 'Spécialiste Marketing', typeContrat: 'CDI' },
-  { matricule: 'E002', noms: 'Bob Leclerc', departement: 'Ingénierie', salaire: 3500, poste: 'Développeur Senior', typeContrat: 'CDI' },
-  { matricule: '20055', noms: 'Trish KALOMBOLA', departement: 'Finance', salaire: 4500, poste: 'Directeur Financier', typeContrat: 'CDI' },
-  { matricule: '22105', noms: 'Bernard BEYA', departement: 'Finance', salaire: 4000, poste: 'Comptable', typeContrat: 'CDI' },
-];
-
-const initialSalaryHistory: SalaryChange[] = [
-  { date: '20/06/2025', matricule: '21072', noms: 'John TSHIAMALA', ancienneValeur: 3000, nouvelleValeur: 3500, motif: 'ajustement salaire' },
-];
-
-const initialFunctionHistory: FunctionChange[] = [
-  { date: '20/06/2025', matricule: '20055', noms: 'Trish KALOMBOLA', ancienneValeur: 'Directeur Financier', nouvelleValeur: 'chief driver', motif: 'promotion' },
-];
-
-const initialContractHistory: ContractChange[] = [
-  { date: '20/06/2025', matricule: '22105', noms: 'Bernard BEYA', ancienneValeur: 'CDI', nouvelleValeur: 'CDD', motif: 'pas de motif (Département de "Finance" vers "Comm' },
-];
+import { store, notify, useStore, SalaryChange, FunctionChange, ContractChange, Employee } from '@/lib/store';
 
 function SalaryChangeContent() {
-  const [employees, setEmployees] = React.useState<Employee[]>(initialEmployees);
-  const [history, setHistory] = React.useState<SalaryChange[]>(initialSalaryHistory);
+  useStore(); // Subscribe to store updates
+
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
-  
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [newSalary, setNewSalary] = React.useState('');
   const [reason, setReason] = React.useState('');
   const [newDepartment, setNewDepartment] = React.useState('');
 
-  const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
+  const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
+
+  const resetFields = () => {
+    setSelectedMatricule(undefined);
+    setDate(new Date());
+    setNewSalary('');
+    setReason('');
+    setNewDepartment('');
+  }
 
   const handleApplyChange = () => {
     if (!selectedEmployee || !newSalary || !reason || !date) {
@@ -104,22 +56,18 @@ function SalaryChangeContent() {
       nouvelleValeur: newSalaryValue,
       motif: reason,
     };
-    setHistory(prev => [newChange, ...prev]);
+    store.salaryHistory.unshift(newChange);
 
-    setEmployees(prev =>
-      prev.map(emp =>
-        emp.matricule === selectedEmployee.matricule
-          ? { ...emp, salaire: newSalaryValue, departement: newDepartment || emp.departement }
-          : emp
-      )
-    );
-
-    // Réinitialiser les champs
-    setSelectedMatricule(undefined);
-    setDate(new Date());
-    setNewSalary('');
-    setReason('');
-    setNewDepartment('');
+    const employeeToUpdate = store.employees.find(e => e.matricule === selectedEmployee.matricule);
+    if (employeeToUpdate) {
+        employeeToUpdate.salaire = newSalaryValue;
+        if (newDepartment) {
+            employeeToUpdate.departement = newDepartment;
+        }
+    }
+    
+    notify();
+    resetFields();
   };
 
   const formatCurrency = (value: number) => {
@@ -145,7 +93,7 @@ function SalaryChangeContent() {
                   <SelectValue placeholder="Choisir un employé" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map(employee => (
+                  {store.employees.map(employee => (
                     <SelectItem key={employee.matricule} value={employee.matricule}>
                       {employee.noms}
                     </SelectItem>
@@ -223,7 +171,7 @@ function SalaryChangeContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {history.map((item, index) => (
+                {store.salaryHistory.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{item.date}</TableCell>
                     <TableCell>{item.matricule}</TableCell>
@@ -243,16 +191,23 @@ function SalaryChangeContent() {
 }
 
 function FunctionChangeContent() {
-  const [employees, setEmployees] = React.useState<Employee[]>(initialEmployees);
-  const [history, setHistory] = React.useState<FunctionChange[]>(initialFunctionHistory);
+  useStore();
+
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
-  
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [newFunction, setNewFunction] = React.useState('');
   const [reason, setReason] = React.useState('');
   const [newDepartment, setNewDepartment] = React.useState('');
 
-  const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
+  const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
+  
+  const resetFields = () => {
+    setSelectedMatricule(undefined);
+    setDate(new Date());
+    setNewFunction('');
+    setReason('');
+    setNewDepartment('');
+  }
 
   const handleApplyChange = () => {
     if (!selectedEmployee || !newFunction || !reason || !date) {
@@ -268,22 +223,18 @@ function FunctionChangeContent() {
       nouvelleValeur: newFunction,
       motif: reason,
     };
-    setHistory(prev => [newChange, ...prev]);
+    store.functionHistory.unshift(newChange);
 
-    setEmployees(prev =>
-      prev.map(emp =>
-        emp.matricule === selectedEmployee.matricule
-          ? { ...emp, poste: newFunction, departement: newDepartment || emp.departement }
-          : emp
-      )
-    );
+    const employeeToUpdate = store.employees.find(emp => emp.matricule === selectedEmployee.matricule);
+    if (employeeToUpdate) {
+        employeeToUpdate.poste = newFunction;
+        if (newDepartment) {
+            employeeToUpdate.departement = newDepartment;
+        }
+    }
 
-    // Réinitialiser les champs
-    setSelectedMatricule(undefined);
-    setDate(new Date());
-    setNewFunction('');
-    setReason('');
-    setNewDepartment('');
+    notify();
+    resetFields();
   };
 
   return (
@@ -305,7 +256,7 @@ function FunctionChangeContent() {
                   <SelectValue placeholder="Choisir un employé" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map(employee => (
+                  {store.employees.map(employee => (
                     <SelectItem key={employee.matricule} value={employee.matricule}>
                       {employee.noms}
                     </SelectItem>
@@ -383,7 +334,7 @@ function FunctionChangeContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {history.map((item, index) => (
+                {store.functionHistory.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{item.date}</TableCell>
                     <TableCell>{item.matricule}</TableCell>
@@ -403,16 +354,23 @@ function FunctionChangeContent() {
 }
 
 function ContractChangeContent() {
-  const [employees, setEmployees] = React.useState<Employee[]>(initialEmployees);
-  const [history, setHistory] = React.useState<ContractChange[]>(initialContractHistory);
+  useStore();
+
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
-  
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [newContractType, setNewContractType] = React.useState<string | undefined>();
   const [reason, setReason] = React.useState('');
   const [newDepartment, setNewDepartment] = React.useState('');
 
-  const selectedEmployee = employees.find(e => e.matricule === selectedMatricule);
+  const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
+  
+  const resetFields = () => {
+    setSelectedMatricule(undefined);
+    setDate(new Date());
+    setNewContractType(undefined);
+    setReason('');
+    setNewDepartment('');
+  }
 
   const handleApplyChange = () => {
     if (!selectedEmployee || !newContractType || !reason || !date) {
@@ -434,22 +392,18 @@ function ContractChangeContent() {
       motif: finalMotif,
     };
     
-    setHistory(prev => [newChange, ...prev]);
+    store.contractHistory.unshift(newChange);
 
-    setEmployees(prev =>
-      prev.map(emp =>
-        emp.matricule === selectedEmployee.matricule
-          ? { ...emp, typeContrat: newContractType, departement: newDepartment || emp.departement }
-          : emp
-      )
-    );
+    const employeeToUpdate = store.employees.find(emp => emp.matricule === selectedEmployee.matricule);
+    if(employeeToUpdate) {
+        employeeToUpdate.typeContrat = newContractType;
+        if(newDepartment) {
+            employeeToUpdate.departement = newDepartment;
+        }
+    }
 
-    // Réinitialiser les champs
-    setSelectedMatricule(undefined);
-    setDate(new Date());
-    setNewContractType(undefined);
-    setReason('');
-    setNewDepartment('');
+    notify();
+    resetFields();
   };
 
   return (
@@ -471,7 +425,7 @@ function ContractChangeContent() {
                   <SelectValue placeholder="Choisir un employé" />
                 </SelectTrigger>
                 <SelectContent>
-                  {employees.map(employee => (
+                  {store.employees.map(employee => (
                     <SelectItem key={employee.matricule} value={employee.matricule}>
                       {employee.noms}
                     </SelectItem>
@@ -559,7 +513,7 @@ function ContractChangeContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {history.map((item, index) => (
+                {store.contractHistory.map((item, index) => (
                   <TableRow key={index}>
                     <TableCell>{item.date}</TableCell>
                     <TableCell>{item.matricule}</TableCell>
@@ -578,44 +532,10 @@ function ContractChangeContent() {
   );
 }
 
-type GlobalHistoryItem = {
-  date: string;
-  matricule: string;
-  noms: string;
-  type: string;
-  ancienneValeur: string | number;
-  nouvelleValeur: string | number;
-  motif: string;
-};
+type GlobalHistoryItem = (SalaryChange | FunctionChange | ContractChange) & { type: string };
 
 function GlobalHistoryContent() {
-  const [history, setHistory] = React.useState<GlobalHistoryItem[]>([]);
-
-  React.useEffect(() => {
-    const salaryHistory = initialSalaryHistory.map(item => ({
-      ...item,
-      type: 'Changement de Salaire',
-    }));
-
-    const functionHistory = initialFunctionHistory.map(item => ({
-      ...item,
-      type: 'Changement de Fonction',
-    }));
-
-    const contractHistory = initialContractHistory.map(item => ({
-      ...item,
-      type: 'Changement de Contrat',
-    }));
-    
-    const allHistory = [...salaryHistory, ...functionHistory, ...contractHistory]
-      .sort((a, b) => {
-        const dateA = new Date(a.date.split('/').reverse().join('-')).getTime();
-        const dateB = new Date(b.date.split('/').reverse().join('-')).getTime();
-        return dateB - dateA;
-      });
-
-    setHistory(allHistory as GlobalHistoryItem[]);
-  }, []);
+  useStore();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value) + ' $US';
@@ -627,6 +547,16 @@ function GlobalHistoryContent() {
     }
     return value;
   };
+
+  const allHistory: GlobalHistoryItem[] = [
+      ...store.salaryHistory.map(item => ({ ...item, type: 'Changement de Salaire' })),
+      ...store.functionHistory.map(item => ({ ...item, type: 'Changement de Fonction' })),
+      ...store.contractHistory.map(item => ({ ...item, type: 'Changement de Contrat' })),
+  ].sort((a, b) => {
+      const dateA = new Date(a.date.split('/').reverse().join('-')).getTime();
+      const dateB = new Date(b.date.split('/').reverse().join('-')).getTime();
+      return dateB - dateA;
+  });
 
   return (
     <Card className="mt-6">
@@ -648,7 +578,7 @@ function GlobalHistoryContent() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {history.map((item, index) => (
+              {allHistory.map((item, index) => (
                 <TableRow key={index}>
                   <TableCell>{item.date}</TableCell>
                   <TableCell>{item.matricule}</TableCell>
