@@ -35,18 +35,36 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import React from 'react';
-import { store, notify, useStore } from '@/lib/store';
-
-
-// Note: For a real app, adding a user would involve more complex logic,
-// including creating an auth user and saving to a database.
-// This is simplified for the frontend prototype.
+import { store, notify, useStore, type User } from '@/lib/store';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function AdminPage() {
   useStore();
+  const [editingUser, setEditingUser] = React.useState<User | null>(null);
+  const [newRole, setNewRole] = React.useState<string | undefined>();
+
+  React.useEffect(() => {
+    if (editingUser) {
+      setNewRole(editingUser.role);
+    }
+  }, [editingUser]);
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -63,10 +81,26 @@ export default function AdminPage() {
     store.users = store.users.filter((u) => u.email !== email);
     notify();
   };
-  
+
   const handleDeleteAllUsers = () => {
     store.users = [];
     notify();
+  };
+
+  const handleUpdateUserRole = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingUser || !newRole) return;
+
+    const updatedUser: User = {
+      ...editingUser,
+      role: newRole,
+    };
+
+    store.users = store.users.map((u) =>
+      u.email === editingUser.email ? updatedUser : u
+    );
+    notify();
+    setEditingUser(null);
   };
 
   return (
@@ -95,7 +129,8 @@ export default function AdminPage() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                     Cette action est irréversible. Cela supprimera définitivement tous les utilisateurs.
+                    Cette action est irréversible. Cela supprimera
+                    définitivement tous les utilisateurs.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -161,7 +196,9 @@ export default function AdminPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Modifier le rôle</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                          Modifier le rôle
+                        </DropdownMenuItem>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem
@@ -174,9 +211,12 @@ export default function AdminPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                              <AlertDialogTitle>
+                                Êtes-vous sûr ?
+                              </AlertDialogTitle>
                               <AlertDialogDescription>
-                                Cette action est irréversible. L'utilisateur sera définitivement supprimé.
+                                Cette action est irréversible. L'utilisateur sera
+                                définitivement supprimé.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
@@ -198,6 +238,52 @@ export default function AdminPage() {
           </Table>
         </div>
       </CardContent>
+      <Dialog
+        open={!!editingUser}
+        onOpenChange={(isOpen) => !isOpen && setEditingUser(null)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <form onSubmit={handleUpdateUserRole}>
+            <DialogHeader>
+              <DialogTitle>Modifier le rôle de l'utilisateur</DialogTitle>
+              <DialogDescription>
+                Sélectionnez un nouveau rôle pour {editingUser?.name}.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="role-edit" className="text-right">
+                  Rôle
+                </Label>
+                <Select
+                  name="role"
+                  value={newRole}
+                  onValueChange={(value: string) => setNewRole(value)}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner un rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="viewer">Viewer</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="superadmin">Superadmin</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setEditingUser(null)}
+              >
+                Annuler
+              </Button>
+              <Button type="submit">Sauvegarder</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
