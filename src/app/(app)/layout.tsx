@@ -9,6 +9,7 @@ import {
   Settings,
   Shield,
   Users,
+  Landmark,
 } from 'lucide-react';
 import { useRef, type ChangeEvent } from 'react';
 import Papa from 'papaparse';
@@ -43,6 +44,7 @@ const navItems = [
   { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { href: '/recruitment', label: 'Recrutement', icon: Users },
   { href: '/personnel', label: 'Gestion du Personnel', icon: Briefcase },
+  { href: '/salaire', label: 'Salaire', icon: Landmark },
   { href: '/settings', label: 'Paramètres Généraux', icon: Settings },
   { href: '/admin', label: 'Panneau Admin', icon: Shield },
 ];
@@ -51,6 +53,7 @@ const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Tableau de Bord',
   '/recruitment': 'Recrutement',
   '/personnel': 'Gestion du Personnel',
+  '/salaire': 'Salaire',
   '/settings': 'Paramètres Généraux',
   '/admin': 'Panneau Admin',
 };
