@@ -2,6 +2,9 @@
 
 import { useRef } from 'react';
 import Papa from 'papaparse';
+import { usePathname } from 'next/navigation';
+import { collection, writeBatch, doc } from 'firebase/firestore';
+import { db } from '@/lib/firebase/client';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,19 +16,80 @@ export function Header() {
   const { toast } = useToast();
   const { userData } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pathname = usePathname();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      Papa.parse(file, {
-        complete: (result) => {
-          console.log("Parsed CSV data:", result.data);
-          toast({
-            title: "Importation réussie",
-            description: `${result.data.length} enregistrements ont été chargés.`,
-          });
-        },
+    if (!file || !db) return;
+
+    // Reset file input to allow re-uploading the same file
+    if(event.target) {
+        event.target.value = '';
+    }
+
+    let collectionName = '';
+    if (pathname.startsWith('/dashboard/recruitment')) {
+        collectionName = 'candidates';
+    } else if (pathname.startsWith('/dashboard/personnel')) {
+        collectionName = 'employees';
+    }
+
+    if (!collectionName) {
+        toast({
+            variant: "destructive",
+            title: "Importation non disponible",
+            description: "Importez depuis les pages Recrutement ou Personnel.",
+        });
+        return;
+    }
+
+    const currentCollection = collectionName; // To use in the callback
+
+    Papa.parse(file, {
         header: true,
+        skipEmptyLines: true,
+        complete: async (result) => {
+            if (!result.data || result.data.length === 0) {
+                 toast({ variant: "destructive", title: "Fichier vide", description: "Le fichier CSV ne contient aucune donnée." });
+                 return;
+            }
+            
+            try {
+                const batch = writeBatch(db);
+                let validRows = 0;
+                result.data.forEach((row: any) => {
+                    const hasRequiredFields = currentCollection === 'candidates' 
+                        ? row.name && row.email && row.position
+                        : row.name && row.email && row.position && row.department;
+                    
+                    if (hasRequiredFields) {
+                        const docRef = doc(collection(db, currentCollection));
+                        batch.set(docRef, row);
+                        validRows++;
+                    }
+                });
+
+                if (validRows === 0) {
+                     toast({ variant: "destructive", title: "Aucune donnée valide", description: "Vérifiez que les colonnes du CSV correspondent." });
+                     return;
+                }
+
+                await batch.commit();
+                
+                toast({
+                    title: "Importation réussie",
+                    description: `${validRows} enregistrements ont été importés dans ${currentCollection}.`,
+                });
+
+            } catch (error) {
+                console.error("Error importing data:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Erreur d'importation",
+                    description: "Une erreur s'est produite lors de l'enregistrement des données.",
+                });
+            }
+        },
         error: (error) => {
           console.error("Error parsing CSV:", error);
           toast({
@@ -35,11 +99,6 @@ export function Header() {
           });
         },
       });
-    }
-     // Reset file input value to allow re-uploading the same file
-    if(event.target) {
-        event.target.value = '';
-    }
   };
 
   const handleImportClick = () => {
