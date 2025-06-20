@@ -9,7 +9,7 @@ import {
   Settings,
   Shield,
   Users,
-  Landmark,
+  ArrowRightLeft,
 } from 'lucide-react';
 import { useRef, type ChangeEvent } from 'react';
 import Papa from 'papaparse';
@@ -44,7 +44,7 @@ const navItems = [
   { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { href: '/recruitment', label: 'Recrutement', icon: Users },
   { href: '/personnel', label: 'Gestion du Personnel', icon: Briefcase },
-  { href: '/salaire', label: 'Salaire', icon: Landmark },
+  { href: '/salaire', label: 'Mouvement', icon: ArrowRightLeft },
   { href: '/settings', label: 'Paramètres Généraux', icon: Settings },
   { href: '/admin', label: 'Panneau Admin', icon: Shield },
 ];
@@ -53,7 +53,7 @@ const pageTitles: { [key: string]: string } = {
   '/dashboard': 'Tableau de Bord',
   '/recruitment': 'Recrutement',
   '/personnel': 'Gestion du Personnel',
-  '/salaire': 'Salaire',
+  '/salaire': 'Mouvement',
   '/settings': 'Paramètres Généraux',
   '/admin': 'Panneau Admin',
 };
