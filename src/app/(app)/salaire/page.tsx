@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -191,7 +192,7 @@ function SalaryChangeContent() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Historique des Changements</CardTitle>
+          <CardTitle>Historique des Changements de Salaire</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border">
@@ -351,7 +352,7 @@ function FunctionChangeContent() {
       
       <Card>
         <CardHeader>
-          <CardTitle>Historique des Changements</CardTitle>
+          <CardTitle>Historique des Changements de Fonction</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border">
@@ -388,47 +389,48 @@ function FunctionChangeContent() {
 
 export default function SalaryPageContainer() {
   return (
-    <div>
-        <div className="flex items-center border-b">
-            <Button variant="ghost" asChild className="text-primary hover:text-primary">
-                <Link href="/recruitment">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Recrutement
-                </Link>
-            </Button>
-            <Tabs defaultValue="fonction" className="w-full">
-                <TabsList className="ml-4 bg-transparent p-0 border-b-0 rounded-none">
-                    <TabsTrigger value="salaire" className="data-[state=active]:border-b-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent">
-                        <Landmark className="h-4 w-4 mr-2" />
-                        Salaire
-                    </TabsTrigger>
-                    <TabsTrigger value="fonction" className="data-[state=active]:border-b-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent">
-                        <Briefcase className="h-4 w-4 mr-2" />
-                        Fonction
-                    </TabsTrigger>
-                    <TabsTrigger value="contrat" disabled className="data-[state=active]:border-b-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent">
-                        <FileText className="h-4 w-4 mr-2" />
-                        Contrat
-                    </TabsTrigger>
-                    <TabsTrigger value="historique" disabled className="data-[state=active]:border-b-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent">
-                        <History className="h-4 w-4 mr-2" />
-                        Historique Global
-                    </TabsTrigger>
-                </TabsList>
-                 <TabsContent value="salaire">
-                    <SalaryChangeContent />
-                </TabsContent>
-                <TabsContent value="fonction">
-                    <FunctionChangeContent />
-                </TabsContent>
-                <TabsContent value="contrat">
-                    <div className="p-6">Contenu de la page Contrat à venir.</div>
-                </TabsContent>
-                <TabsContent value="historique">
-                    <div className="p-6">Contenu de la page Historique Global à venir.</div>
-                </TabsContent>
-            </Tabs>
-        </div>
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button asChild>
+          <Link href="/recruitment">
+            <Plus className="mr-2 h-4 w-4" />
+            Recrutement
+          </Link>
+        </Button>
+      </div>
+
+      <Tabs defaultValue="fonction" className="w-full">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="salaire">
+            <Landmark className="mr-2 h-4 w-4" />
+            Salaire
+          </TabsTrigger>
+          <TabsTrigger value="fonction">
+            <Briefcase className="mr-2 h-4 w-4" />
+            Fonction
+          </TabsTrigger>
+          <TabsTrigger value="contrat" disabled>
+            <FileText className="mr-2 h-4 w-4" />
+            Contrat
+          </TabsTrigger>
+          <TabsTrigger value="historique" disabled>
+            <History className="mr-2 h-4 w-4" />
+            Historique
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="salaire">
+          <SalaryChangeContent />
+        </TabsContent>
+        <TabsContent value="fonction">
+          <FunctionChangeContent />
+        </TabsContent>
+        <TabsContent value="contrat">
+          <div className="p-6">Contenu de la page Contrat à venir.</div>
+        </TabsContent>
+        <TabsContent value="historique">
+          <div className="p-6">Contenu de la page Historique Global à venir.</div>
+        </TabsContent>
+      </Tabs>
     </div>
-  )
+  );
 }
