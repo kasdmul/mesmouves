@@ -1,0 +1,116 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import {
+  Briefcase,
+  LayoutDashboard,
+  LogOut,
+  Settings,
+  Shield,
+  Users,
+} from 'lucide-react';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarHeader,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarFooter,
+} from '@/components/ui/sidebar';
+
+const navItems = [
+  { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
+  { href: '/recruitment', label: 'Recrutement', icon: Users },
+  { href: '/personnel', label: 'Gestion du Personnel', icon: Briefcase },
+  { href: '/settings', label: 'Paramètres Généraux', icon: Settings },
+  { href: '/admin', label: 'Panneau Admin', icon: Shield },
+];
+
+const pageTitles: { [key: string]: string } = {
+  '/dashboard': 'Tableau de Bord',
+  '/recruitment': 'Recrutement',
+  '/personnel': 'Gestion du Personnel',
+  '/settings': 'Paramètres Généraux',
+  '/admin': 'Panneau Admin',
+};
+
+export default function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname();
+  const pageTitle = pageTitles[pathname] || 'Tableau de Bord';
+
+  return (
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader className="border-b">
+          <h1 className="text-2xl font-semibold tracking-tight">RH Insights</h1>
+        </SidebarHeader>
+        <SidebarContent className="p-2">
+            <SidebarMenu>
+              {navItems.map((item) => (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href} passHref legacyBehavior>
+                    <SidebarMenuButton asChild isActive={pathname.startsWith(item.href)}>
+                      <a>
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </a>
+                    </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter className="p-2 border-t">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton variant="outline">
+                <LogOut />
+                <span>Déconnexion</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger />
+            <h2 className="text-xl font-semibold" id="currentTabTitle">
+              {pageTitle}
+            </h2>
+          </div>
+          <div className="flex items-center gap-4">
+            <Button variant="outline" size="sm" className="hidden sm:flex">
+              Changer le mot de passe
+            </Button>
+            <Button size="sm" className="hidden sm:flex">Importer CSV</Button>
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="https://placehold.co/40x40.png" alt="@user" data-ai-hint="person" />
+                <AvatarFallback>U</AvatarFallback>
+              </Avatar>
+              <span id="userDisplayName" className="text-sm font-medium hidden md:block">
+                Utilisateur
+              </span>
+            </div>
+          </div>
+        </header>
+        <main className="flex-1 overflow-y-auto p-6">
+          {children}
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
+  );
+}
