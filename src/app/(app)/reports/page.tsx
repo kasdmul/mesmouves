@@ -98,6 +98,8 @@ export default function ReportsPage() {
 
   const availableYears = React.useMemo(() => {
     const years = new Set<number>();
+    years.add(new Date().getFullYear());
+
     store.employees.forEach(e => {
       const hireDate = parseFlexibleDate(e.dateEmbauche);
       if (hireDate) years.add(getYear(hireDate));
@@ -106,9 +108,7 @@ export default function ReportsPage() {
         if (departureDate) years.add(getYear(departureDate));
       }
     });
-    if (years.size === 0) {
-        years.add(new Date().getFullYear());
-    }
+    
     return Array.from(years).sort((a, b) => b - a);
   }, [store.employees]);
   
