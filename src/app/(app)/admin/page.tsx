@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -58,8 +59,81 @@ import { notify, store, useStore, type User } from '@/lib/store';
 import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import React from 'react';
 
+function CreateSuperAdmin() {
+  const [name, setName] = React.useState('');
+  const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
+
+  const handleCreate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !password) {
+      alert('Veuillez remplir tous les champs.');
+      return;
+    }
+    const newUser: User = {
+      name,
+      email,
+      password,
+      role: 'superadmin',
+    };
+    store.users.push(newUser);
+    store.currentUser = newUser;
+    notify();
+  };
+
+  return (
+    <div className="flex justify-center items-center h-full">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Créer le Compte Super Administrateur</CardTitle>
+          <CardDescription>
+            Aucun utilisateur n'existe. Veuillez créer le premier compte pour commencer.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="superadmin-name">Nom complet</Label>
+              <Input
+                id="superadmin-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="superadmin-email">Email</Label>
+              <Input
+                id="superadmin-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="superadmin-password">Mot de passe</Label>
+              <Input
+                id="superadmin-password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button type="submit" className="w-full">
+              Créer le compte
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function AdminPage() {
-  const { currentUser } = useStore();
+  useStore();
+  const { currentUser } = store;
 
   const [isAddUserOpen, setIsAddUserOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
@@ -71,40 +145,49 @@ export default function AdminPage() {
   const [newUserPassword, setNewUserPassword] = React.useState('');
 
   // Edit User State
-  const [editForm, setEditForm] = React.useState({ name: '', email: '', role: '' as User['role'], password: '' });
+  const [editForm, setEditForm] = React.useState({
+    name: '',
+    email: '',
+    role: '' as User['role'],
+    password: '',
+  });
 
   React.useEffect(() => {
     if (editingUser) {
       setEditForm({
-          name: editingUser.name,
-          email: editingUser.email,
-          role: editingUser.role,
-          password: '', // Don't pre-fill password
+        name: editingUser.name,
+        email: editingUser.email,
+        role: editingUser.role,
+        password: '', // Don't pre-fill password
       });
     }
   }, [editingUser]);
+  
+  if (store.users.length === 0 && !currentUser) {
+    return <CreateSuperAdmin />;
+  }
 
   const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setEditForm(prev => ({ ...prev, [name]: value }));
+    setEditForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleEditRoleChange = (value: User['role']) => {
-    setEditForm(prev => ({ ...prev, role: value }));
-  }
-  
+    setEditForm((prev) => ({ ...prev, role: value }));
+  };
+
   const resetAddUserForm = () => {
     setNewUserName('');
     setNewUserEmail('');
     setNewUserRole(undefined);
     setNewUserPassword('');
     setIsAddUserOpen(false);
-  }
+  };
 
   const handleAddUser = (event: React.FormEvent) => {
     event.preventDefault();
     if (!newUserName || !newUserEmail || !newUserRole || !newUserPassword) {
-      alert("Veuillez remplir tous les champs.");
+      alert('Veuillez remplir tous les champs.');
       return;
     }
     const newUser: User = {
@@ -130,18 +213,23 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = (email: string) => {
-    // Prevent deleting superadmin
-    if (store.users.find(u => u.email === email)?.role === 'superadmin') {
-        alert("Le super administrateur ne peut pas être supprimé.");
+    const userToDelete = store.users.find(u => u.email === email);
+    if (!userToDelete) return;
+
+    const isLastSuperAdmin = userToDelete.role === 'superadmin' && store.users.filter(u => u.role === 'superadmin').length === 1;
+
+    if (isLastSuperAdmin) {
+        alert("Vous ne pouvez pas supprimer le dernier super administrateur. Utilisez 'Tout supprimer' pour réinitialiser l'application.");
         return;
     }
+
     store.users = store.users.filter((u) => u.email !== email);
     notify();
   };
 
   const handleDeleteAllUsers = () => {
-    // Keep superadmin
-    store.users = store.users.filter(u => u.role === 'superadmin');
+    store.users = [];
+    store.currentUser = null;
     notify();
   };
 
@@ -149,16 +237,20 @@ export default function AdminPage() {
     event.preventDefault();
     if (!editingUser) return;
 
-    // Admin cannot change superadmin or other admin roles
-    if (currentUser?.role === 'admin' && (editingUser.role === 'superadmin' || editingUser.role === 'admin')) {
+    if (
+      currentUser?.role === 'admin' &&
+      (editingUser.role === 'superadmin' || editingUser.role === 'admin')
+    ) {
       alert("Vous n'avez pas la permission de modifier cet utilisateur.");
       return;
     }
 
-    // Check for duplicate email
-    if (editForm.email !== editingUser.email && store.users.some(user => user.email === editForm.email)) {
-        alert("Cette adresse e-mail est déjà utilisée par un autre compte.");
-        return;
+    if (
+      editForm.email !== editingUser.email &&
+      store.users.some((user) => user.email === editForm.email)
+    ) {
+      alert('Cette adresse e-mail est déjà utilisée par un autre compte.');
+      return;
     }
 
     const updatedUser: User = {
@@ -173,22 +265,21 @@ export default function AdminPage() {
       u.email === editingUser.email ? updatedUser : u
     );
 
-    // If the currently logged-in user is the one being edited, update currentUser as well
     if (currentUser && currentUser.email === editingUser.email) {
-        store.currentUser = updatedUser;
+      store.currentUser = updatedUser;
     }
-    
+
     notify();
     setEditingUser(null);
   };
-  
-  // Filter users based on current user's role
-  const displayedUsers = store.currentUser?.role === 'admin'
-    ? store.users.filter(u => u.role !== 'superadmin')
-    : store.users;
 
-  // Check if current user has management permissions
-  const canManage = currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
+  const displayedUsers =
+    store.currentUser?.role === 'admin'
+      ? store.users.filter((u) => u.role !== 'superadmin')
+      : store.users;
+
+  const canManage =
+    currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
 
   return (
     <Card>
@@ -242,48 +333,85 @@ export default function AdminPage() {
                 </DialogContent>
               </Dialog>
               <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
-                 <DialogTrigger asChild>
-                    <Button>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Ajouter un utilisateur
-                    </Button>
-                 </DialogTrigger>
-                 <DialogContent className="sm:max-w-md">
-                    <form onSubmit={handleAddUser}>
-                        <DialogHeader>
-                            <DialogTitle>Ajouter un Nouvel Utilisateur</DialogTitle>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="new-user-name">Nom Utilisateur</Label>
-                                <Input id="new-user-name" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="new-user-email">Email</Label>
-                                <Input id="new-user-email" type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} required />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="new-user-role">Rôle</Label>
-                                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as User['role'])} required>
-                                    <SelectTrigger><SelectValue placeholder="Sélectionner un rôle" /></SelectTrigger>
-                                    <SelectContent>
-                                        {currentUser?.role === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
-                                        {currentUser?.role === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
-                                        <SelectItem value="membre">Membre</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="new-user-password">Mot de passe</Label>
-                                <Input id="new-user-password" type="password" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} required />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="button" variant="secondary" onClick={resetAddUserForm}>Annuler</Button>
-                            <Button type="submit">Sauvegarder</Button>
-                        </DialogFooter>
-                    </form>
-                 </DialogContent>
+                <DialogTrigger asChild>
+                  <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Ajouter un utilisateur
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <form onSubmit={handleAddUser}>
+                    <DialogHeader>
+                      <DialogTitle>Ajouter un Nouvel Utilisateur</DialogTitle>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="new-user-name">Nom Utilisateur</Label>
+                        <Input
+                          id="new-user-name"
+                          value={newUserName}
+                          onChange={(e) => setNewUserName(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-user-email">Email</Label>
+                        <Input
+                          id="new-user-email"
+                          type="email"
+                          value={newUserEmail}
+                          onChange={(e) => setNewUserEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-user-role">Rôle</Label>
+                        <Select
+                          value={newUserRole}
+                          onValueChange={(v) =>
+                            setNewUserRole(v as User['role'])
+                          }
+                          required
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner un rôle" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {currentUser?.role === 'superadmin' && (
+                              <SelectItem value="superadmin">
+                                Super Admin
+                              </SelectItem>
+                            )}
+                            {currentUser?.role === 'superadmin' && (
+                              <SelectItem value="admin">Admin</SelectItem>
+                            )}
+                            <SelectItem value="membre">Membre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new-user-password">Mot de passe</Label>
+                        <Input
+                          id="new-user-password"
+                          type="password"
+                          value={newUserPassword}
+                          onChange={(e) => setNewUserPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={resetAddUserForm}
+                      >
+                        Annuler
+                      </Button>
+                      <Button type="submit">Sauvegarder</Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
               </Dialog>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -299,7 +427,7 @@ export default function AdminPage() {
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                       Cette action est irréversible. Cela supprimera
-                      définitivement tous les utilisateurs sauf le super administrateur.
+                      définitivement tous les utilisateurs. Vous devrez créer un nouveau compte super administrateur.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -322,9 +450,9 @@ export default function AdminPage() {
                 <TableHead>Utilisateur</TableHead>
                 <TableHead>Rôle</TableHead>
                 {canManage && (
-                    <TableHead>
-                        <span className="sr-only">Actions</span>
-                    </TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 )}
               </TableRow>
             </TableHeader>
@@ -355,10 +483,12 @@ export default function AdminPage() {
                     </Badge>
                   </TableCell>
                   {canManage && (
-                      <TableCell>
-                        {
-                          // Superadmin can edit anyone. Admin can only edit members.
-                          (currentUser?.role === 'superadmin' || (currentUser?.role === 'admin' && user.role === 'membre')) && user.email !== currentUser?.email &&
+                    <TableCell>
+                      {// Superadmin can edit anyone. Admin can only edit members.
+                      (currentUser?.role === 'superadmin' ||
+                        (currentUser?.role === 'admin' &&
+                          user.role === 'membre')) &&
+                        user.email !== currentUser?.email && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -372,7 +502,9 @@ export default function AdminPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                              <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                              <DropdownMenuItem
+                                onClick={() => setEditingUser(user)}
+                              >
                                 Modifier
                               </DropdownMenuItem>
                               <AlertDialog>
@@ -391,14 +523,18 @@ export default function AdminPage() {
                                       Êtes-vous sûr ?
                                     </AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      Cette action est irréversible. L'utilisateur sera
-                                      définitivement supprimé.
+                                      Cette action est irréversible.
+                                      L'utilisateur sera définitivement supprimé.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogCancel>
+                                      Annuler
+                                    </AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleDeleteUser(user.email)}
+                                      onClick={() =>
+                                        handleDeleteUser(user.email)
+                                      }
                                     >
                                       Confirmer
                                     </AlertDialogAction>
@@ -407,8 +543,8 @@ export default function AdminPage() {
                               </AlertDialog>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        }
-                      </TableCell>
+                        )}
+                    </TableCell>
                   )}
                 </TableRow>
               ))}
@@ -430,27 +566,57 @@ export default function AdminPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                  <Label htmlFor="edit-email">Email</Label>
-                  <Input id="edit-email" name="email" type="email" value={editForm.email} onChange={handleEditFormChange} required />
+                <Label htmlFor="edit-email">Email</Label>
+                <Input
+                  id="edit-email"
+                  name="email"
+                  type="email"
+                  value={editForm.email}
+                  onChange={handleEditFormChange}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                  <Label htmlFor="edit-name">Nom Utilisateur</Label>
-                  <Input id="edit-name" name="name" value={editForm.name} onChange={handleEditFormChange} required />
+                <Label htmlFor="edit-name">Nom Utilisateur</Label>
+                <Input
+                  id="edit-name"
+                  name="name"
+                  value={editForm.name}
+                  onChange={handleEditFormChange}
+                  required
+                />
               </div>
               <div className="space-y-2">
-                  <Label htmlFor="edit-role">Rôle</Label>
-                  <Select value={editForm.role} onValueChange={handleEditRoleChange} required>
-                      <SelectTrigger><SelectValue placeholder="Sélectionner un rôle" /></SelectTrigger>
-                      <SelectContent>
-                          {currentUser?.role === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
-                          {currentUser?.role === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
-                          <SelectItem value="membre">Membre</SelectItem>
-                      </SelectContent>
-                  </Select>
+                <Label htmlFor="edit-role">Rôle</Label>
+                <Select
+                  value={editForm.role}
+                  onValueChange={handleEditRoleChange}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un rôle" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currentUser?.role === 'superadmin' && (
+                      <SelectItem value="superadmin">Super Admin</SelectItem>
+                    )}
+                    {currentUser?.role === 'superadmin' && (
+                      <SelectItem value="admin">Admin</SelectItem>
+                    )}
+                    <SelectItem value="membre">Membre</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                  <Label htmlFor="edit-password">Nouveau Mot de passe</Label>
-                  <Input id="edit-password" name="password" type="password" value={editForm.password} onChange={handleEditFormChange} placeholder="Laisser vide pour ne pas changer" />
+                <Label htmlFor="edit-password">Nouveau Mot de passe</Label>
+                <Input
+                  id="edit-password"
+                  name="password"
+                  type="password"
+                  value={editForm.password}
+                  onChange={handleEditFormChange}
+                  placeholder="Laisser vide pour ne pas changer"
+                />
               </div>
             </div>
             <DialogFooter>

@@ -100,17 +100,14 @@ export type WorkLocationChange = {
 
 // --- Data Store ---
 // This acts as our in-memory database.
-const initialUsers: User[] = [
-  { name: 'Super Admin', email: 'superadmin@rh-insights.com', role: 'superadmin', password: 'password' },
-];
+const initialUsers: User[] = [];
 
 export const store = {
   employees: [] as Employee[],
   openPositions: [] as OpenPosition[],
   users: initialUsers,
-  // For demonstration, we'll set the currentUser. In a real app, this would be null
-  // until a user logs in.
-  currentUser: initialUsers[0] as User | null, 
+  // currentUser will be set after the first user is created, or on login.
+  currentUser: null as User | null, 
   salaryHistory: [] as SalaryChange[],
   functionHistory: [] as FunctionChange[],
   contractHistory: [] as ContractChange[],
