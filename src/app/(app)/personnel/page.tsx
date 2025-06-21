@@ -122,8 +122,8 @@ export default function PersonnelPage() {
   const getSexe = (sexe: string | undefined): Employee['sexe'] => {
       if (!sexe) return 'N/A';
       const s = sexe.trim().toLowerCase();
-      if (s === 'femme' || s === 'f') return 'Femme';
-      if (s === 'homme' || s === 'h' || s === 'm') return 'Homme';
+      if (s === 'femme' || s === 'f' || s === 'féminin') return 'Femme';
+      if (s === 'homme' || s === 'h' || s === 'm' || s === 'masculin' || s === 'mascilin') return 'Homme';
       return 'N/A';
   };
 
