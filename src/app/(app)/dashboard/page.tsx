@@ -2,6 +2,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   Card,
   CardContent,
@@ -240,16 +241,22 @@ export default function DashboardPage() {
             <p className="text-xs text-muted-foreground">Cette année</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Postes Ouverts</CardTitle>
-            <Briefcase className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{openPositions}</div>
-            <p className="text-xs text-muted-foreground">Recrutement en cours</p>
-          </CardContent>
-        </Card>
+        <Link href="/recruitment">
+          <Card className="transition-all hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Postes Ouverts
+              </CardTitle>
+              <Briefcase className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{openPositions}</div>
+              <p className="text-xs text-muted-foreground">
+                Cliquez pour voir les recrutements
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Départements</CardTitle>
