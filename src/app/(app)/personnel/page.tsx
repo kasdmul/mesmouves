@@ -245,6 +245,11 @@ export default function PersonnelPage() {
     const form = event.target as HTMLFormElement;
     const formData = new FormData(form);
 
+    let finalDepartureDate = editingDepartureDate;
+    if (editingStatus === 'Parti' && !finalDepartureDate) {
+      finalDepartureDate = new Date();
+    }
+
     const updatedEmployee: Employee = {
       ...editingEmployee,
       noms: formData.get('noms-edit') as string,
@@ -260,8 +265,8 @@ export default function PersonnelPage() {
       ),
       status: editingStatus,
       dateDepart:
-        editingStatus === 'Parti' && editingDepartureDate
-          ? format(editingDepartureDate, 'dd/MM/yyyy')
+        editingStatus === 'Parti' && finalDepartureDate
+          ? format(finalDepartureDate, 'dd/MM/yyyy')
           : undefined,
     };
 
