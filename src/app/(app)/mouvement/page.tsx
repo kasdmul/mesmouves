@@ -16,6 +16,7 @@ import { Calendar as CalendarIcon, DollarSign, Briefcase, FileText, History, Lan
 import { cn } from '@/lib/utils';
 import { store, notify, useStore, SalaryChange, FunctionChange, ContractChange, DepartmentChange, EntityChange, Employee, WorkLocationChange } from '@/lib/store';
 import Papa from 'papaparse';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 function SalaryChangeContent() {
@@ -834,6 +835,9 @@ function WorkLocationChangeContent() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [newWorkLocation, setNewWorkLocation] = React.useState<string | undefined>();
   const [reason, setReason] = React.useState('');
+  const [droitPrimeEloignement, setDroitPrimeEloignement] = React.useState(false);
+  const [pourcentagePrime, setPourcentagePrime] = React.useState<string>('');
+  const [dureeAffectationMois, setDureeAffectationMois] = React.useState<string>('');
 
   const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
   
@@ -842,6 +846,9 @@ function WorkLocationChangeContent() {
     setDate(new Date());
     setNewWorkLocation(undefined);
     setReason('');
+    setDroitPrimeEloignement(false);
+    setPourcentagePrime('');
+    setDureeAffectationMois('');
   }
 
   const handleApplyChange = () => {
@@ -857,6 +864,9 @@ function WorkLocationChangeContent() {
       ancienneValeur: selectedEmployee.lieuTravail,
       nouvelleValeur: newWorkLocation,
       motif: reason,
+      droitPrimeEloignement,
+      pourcentagePrime: droitPrimeEloignement ? parseFloat(pourcentagePrime) : undefined,
+      dureeAffectationMois: dureeAffectationMois ? parseInt(dureeAffectationMois) : undefined,
     };
     store.workLocationHistory.unshift(newChange);
 
@@ -946,8 +956,20 @@ function WorkLocationChangeContent() {
               <Label htmlFor="reason-work-location">Motif du Changement</Label>
               <Input id="reason-work-location" placeholder="Motif du Changement" value={reason} onChange={e => setReason(e.target.value)} />
             </div>
+            <div className="flex items-center space-x-2 pt-8 col-span-1">
+              <Checkbox id="droit-prime" checked={droitPrimeEloignement} onCheckedChange={(checked) => setDroitPrimeEloignement(checked as boolean)} />
+              <Label htmlFor="droit-prime" className="cursor-pointer">Droit à la prime d'éloignement</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="pourcentage-prime">Pourcentage Prime (%)</Label>
+              <Input id="pourcentage-prime" type="number" placeholder="ex: 10" value={pourcentagePrime} onChange={e => setPourcentagePrime(e.target.value)} disabled={!droitPrimeEloignement} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="duree-affectation">Durée Affectation (mois)</Label>
+              <Input id="duree-affectation" type="number" placeholder="ex: 12" value={dureeAffectationMois} onChange={e => setDureeAffectationMois(e.target.value)} />
+            </div>
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-6">
             <Button onClick={handleApplyChange}>Appliquer le Changement</Button>
           </div>
         </CardContent>
@@ -967,6 +989,9 @@ function WorkLocationChangeContent() {
                   <TableHead>NOMS</TableHead>
                   <TableHead>ANCIENNE VALEUR</TableHead>
                   <TableHead>NOUVELLE VALEUR</TableHead>
+                  <TableHead>PRIME</TableHead>
+                  <TableHead>%</TableHead>
+                  <TableHead>DURÉE (Mois)</TableHead>
                   <TableHead>MOTIF</TableHead>
                 </TableRow>
               </TableHeader>
@@ -978,6 +1003,9 @@ function WorkLocationChangeContent() {
                     <TableCell>{item.noms}</TableCell>
                     <TableCell>{item.ancienneValeur}</TableCell>
                     <TableCell>{item.nouvelleValeur}</TableCell>
+                    <TableCell>{item.droitPrimeEloignement ? 'Oui' : 'Non'}</TableCell>
+                    <TableCell>{item.pourcentagePrime ?? 'N/A'}</TableCell>
+                    <TableCell>{item.dureeAffectationMois ?? 'N/A'}</TableCell>
                     <TableCell>{item.motif}</TableCell>
                   </TableRow>
                 ))}
@@ -1028,15 +1056,29 @@ function GlobalHistoryContent() {
   const handleExport = () => {
     if (allHistory.length === 0) return;
 
-    const dataToExport = allHistory.map(item => ({
-      "DATE": item.date,
-      "MATRICULE": item.matricule,
-      "NOMS": item.noms,
-      "TYPE DE MOUVEMENT": item.type,
-      "ANCIENNE VALEUR": item.ancienneValeur,
-      "NOUVELLE VALEUR": item.nouvelleValeur,
-      "MOTIF": item.motif,
-    }));
+    const dataToExport = allHistory.map(item => {
+      const baseData = {
+        "DATE": item.date,
+        "MATRICULE": item.matricule,
+        "NOMS": item.noms,
+        "TYPE DE MOUVEMENT": item.type,
+        "ANCIENNE VALEUR": item.ancienneValeur,
+        "NOUVELLE VALEUR": item.nouvelleValeur,
+        "MOTIF": item.motif,
+        "PRIME D'ÉLOIGNEMENT": '',
+        "POURCENTAGE PRIME (%)": '',
+        "DURÉE AFFECTATION (MOIS)": '',
+      };
+
+      if (item.type === 'Changement de Lieu de Travail') {
+        const locItem = item as WorkLocationChange;
+        baseData["PRIME D'ÉLOIGNEMENT"] = locItem.droitPrimeEloignement ? 'Oui' : 'Non';
+        baseData["POURCENTAGE PRIME (%)"] = locItem.pourcentagePrime?.toString() ?? '';
+        baseData["DURÉE AFFECTATION (MOIS)"] = locItem.dureeAffectationMois?.toString() ?? '';
+      }
+
+      return baseData;
+    });
 
     const csv = Papa.unparse(dataToExport);
     const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
@@ -1079,6 +1121,7 @@ function GlobalHistoryContent() {
                 <TableHead>ANCIENNE VALEUR</TableHead>
                 <TableHead>NOUVELLE VALEUR</TableHead>
                 <TableHead>MOTIF</TableHead>
+                <TableHead>DÉTAILS</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -1091,6 +1134,18 @@ function GlobalHistoryContent() {
                   <TableCell>{formatValue(item.ancienneValeur, item.type)}</TableCell>
                   <TableCell>{formatValue(item.nouvelleValeur, item.type)}</TableCell>
                   <TableCell>{item.motif}</TableCell>
+                  <TableCell>
+                    {item.type === 'Changement de Lieu de Travail' && (
+                        <div className="text-xs">
+                           {(item as WorkLocationChange).droitPrimeEloignement && (
+                            <div>Prime: Oui ({(item as WorkLocationChange).pourcentagePrime}%)</div>
+                           )}
+                           {(item as WorkLocationChange).dureeAffectationMois && (
+                            <div>Durée: {(item as WorkLocationChange).dureeAffectationMois} mois</div>
+                           )}
+                        </div>
+                    )}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

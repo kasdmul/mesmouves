@@ -18,8 +18,9 @@ import {
   Users,
   Percent,
   AlertTriangle,
+  Clock,
 } from 'lucide-react';
-import { useStore, store } from '@/lib/store';
+import { useStore, store, type Employee } from '@/lib/store';
 import {
   ChartContainer,
   ChartTooltip,
@@ -29,7 +30,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
-import { addMonths, differenceInDays, format } from 'date-fns';
+import { addMonths, differenceInDays, format, differenceInMonths } from 'date-fns';
 
 /**
  * Parses a date string from various common formats.
@@ -227,6 +228,74 @@ export default function DashboardPage() {
       .filter((e): e is NonNullable<typeof e> => e !== null)
       .sort((a, b) => a.daysRemaining - b.daysRemaining);
   }, [store.employees]);
+  
+  const employeesWithLongAssignments = React.useMemo(() => {
+    const today = new Date();
+    const alerts: { employee: Employee; location: string; duration: number }[] = [];
+    const activeEmployees = store.employees.filter((e) => e.status === 'Actif');
+
+    for (const employee of activeEmployees) {
+      const locationHistory = store.workLocationHistory
+        .filter((h) => h.matricule === employee.matricule)
+        .sort((a, b) => {
+          const dateA = parseFlexibleDate(a.date);
+          const dateB = parseFlexibleDate(b.date);
+          if (!dateA || !dateB) return 0;
+          return dateA.getTime() - dateB.getTime();
+        });
+
+      const locationDurations: { [key: string]: number } = {};
+
+      let lastDate = parseFlexibleDate(employee.dateEmbauche);
+      if (!lastDate) continue;
+
+      let firstLocation = employee.lieuTravail;
+
+      if (locationHistory.length === 0) {
+        const duration = differenceInMonths(today, lastDate);
+        locationDurations[employee.lieuTravail] = duration;
+      } else {
+        firstLocation = locationHistory[0].ancienneValeur;
+        
+        for (const change of locationHistory) {
+          const changeDate = parseFlexibleDate(change.date);
+          if (!changeDate) continue;
+
+          const duration = differenceInMonths(changeDate, lastDate);
+          const location = change.ancienneValeur;
+          locationDurations[location] = (locationDurations[location] || 0) + duration;
+          lastDate = changeDate;
+        }
+        
+        const lastChange = locationHistory[locationHistory.length - 1];
+        const duration = differenceInMonths(today, lastDate);
+        const location = lastChange.nouvelleValeur;
+        locationDurations[location] = (locationDurations[location] || 0) + duration;
+      }
+      
+      const hireDate = parseFlexibleDate(employee.dateEmbauche);
+      if(hireDate && locationHistory.length > 0) {
+          const firstChangeDate = parseFlexibleDate(locationHistory[0].date);
+          if(firstChangeDate){
+            const initialDuration = differenceInMonths(firstChangeDate, hireDate);
+            locationDurations[firstLocation] = (locationDurations[firstLocation] || 0) + initialDuration;
+          }
+      }
+
+      for (const [location, duration] of Object.entries(locationDurations)) {
+        if (duration >= 48) {
+          alerts.push({
+            employee: employee,
+            location: location,
+            duration: duration,
+          });
+        }
+      }
+    }
+
+    return alerts.sort((a, b) => a.employee.noms.localeCompare(b.employee.noms));
+  }, [store.employees, store.workLocationHistory]);
+
 
   return (
     <div className="flex flex-col gap-6">
@@ -293,7 +362,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <Card className="border-l-4 border-primary">
           <CardHeader className="flex flex-row items-center gap-3 space-y-0">
             <AlertTriangle className="h-5 w-5 text-primary" />
@@ -321,6 +390,36 @@ export default function DashboardPage() {
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Aucune période d'essai ne se termine dans les 15 prochains jours.</p>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="border-l-4 border-amber-500">
+          <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+            <Clock className="h-5 w-5 text-amber-500" />
+            <CardTitle>
+              Alertes de Durée d'Affectation
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {employeesWithLongAssignments.length > 0 ? (
+              <div className="space-y-4">
+                {employeesWithLongAssignments.map(({ employee, location, duration }) => (
+                  <div key={employee.matricule + location} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                    <div>
+                      <p className="font-semibold">{employee.noms}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Lieu: {location}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                        <span className="font-bold text-lg text-amber-600">{duration}</span>
+                        <span className="text-sm text-muted-foreground ml-1">mois</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Aucun employé n'a dépassé 48 mois d'affectation sur un même site.</p>
             )}
           </CardContent>
         </Card>

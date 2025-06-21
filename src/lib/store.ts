@@ -68,7 +68,7 @@ export type ContractChange = {
 export type DepartmentChange = {
   date: string;
   matricule: string;
-  noms: string;
+  noms:string;
   ancienneValeur: string;
   nouvelleValeur: string;
   motif: string;
@@ -90,6 +90,9 @@ export type WorkLocationChange = {
   ancienneValeur: string;
   nouvelleValeur: string;
   motif: string;
+  droitPrimeEloignement: boolean;
+  pourcentagePrime?: number;
+  dureeAffectationMois?: number;
 };
 
 
