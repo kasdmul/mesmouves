@@ -235,53 +235,57 @@ export default function DashboardPage() {
     const activeEmployees = store.employees.filter((e) => e.status === 'Actif');
 
     for (const employee of activeEmployees) {
+      const hireDate = parseFlexibleDate(employee.dateEmbauche);
+      if (!hireDate) continue;
+
+      // Get and sort location history for the employee
       const locationHistory = store.workLocationHistory
         .filter((h) => h.matricule === employee.matricule)
         .sort((a, b) => {
           const dateA = parseFlexibleDate(a.date);
           const dateB = parseFlexibleDate(b.date);
-          if (!dateA || !dateB) return 0;
+          // If dates are invalid, don't sort, but it's better to handle them
+          if (!dateA) return 1;
+          if (!dateB) return -1;
           return dateA.getTime() - dateB.getTime();
         });
 
-      const locationDurations: { [key: string]: number } = {};
-
-      let lastDate = parseFlexibleDate(employee.dateEmbauche);
-      if (!lastDate) continue;
-
-      let firstLocation = employee.lieuTravail;
+      const locationDurations: { [location: string]: number } = {};
 
       if (locationHistory.length === 0) {
-        const duration = differenceInMonths(today, lastDate);
-        locationDurations[employee.lieuTravail] = duration;
+        // No location changes, calculate duration from hire date to today
+        const duration = differenceInMonths(today, hireDate);
+        if (employee.lieuTravail && employee.lieuTravail !== "N/A") {
+            locationDurations[employee.lieuTravail] = duration;
+        }
       } else {
-        firstLocation = locationHistory[0].ancienneValeur;
+        // Employee has location changes, calculate duration for each period
+        let lastDate = hireDate;
         
+        // Calculate duration for each historical location
         for (const change of locationHistory) {
           const changeDate = parseFlexibleDate(change.date);
           if (!changeDate) continue;
-
-          const duration = differenceInMonths(changeDate, lastDate);
+          
           const location = change.ancienneValeur;
-          locationDurations[location] = (locationDurations[location] || 0) + duration;
+          const duration = differenceInMonths(changeDate, lastDate);
+
+          if(location && location !== "N/A") {
+             locationDurations[location] = (locationDurations[location] || 0) + duration;
+          }
+          
           lastDate = changeDate;
         }
-        
-        const lastChange = locationHistory[locationHistory.length - 1];
-        const duration = differenceInMonths(today, lastDate);
-        const location = lastChange.nouvelleValeur;
-        locationDurations[location] = (locationDurations[location] || 0) + duration;
-      }
-      
-      const hireDate = parseFlexibleDate(employee.dateEmbauche);
-      if(hireDate && locationHistory.length > 0) {
-          const firstChangeDate = parseFlexibleDate(locationHistory[0].date);
-          if(firstChangeDate){
-            const initialDuration = differenceInMonths(firstChangeDate, hireDate);
-            locationDurations[firstLocation] = (locationDurations[firstLocation] || 0) + initialDuration;
-          }
+
+        // Calculate duration for the current location (from the last change date to today)
+        const currentLocation = employee.lieuTravail;
+        const currentDuration = differenceInMonths(today, lastDate);
+        if (currentLocation && currentLocation !== "N/A") {
+           locationDurations[currentLocation] = (locationDurations[currentLocation] || 0) + currentDuration;
+        }
       }
 
+      // Check if any location duration exceeds the threshold (48 months)
       for (const [location, duration] of Object.entries(locationDurations)) {
         if (duration >= 48) {
           alerts.push({
