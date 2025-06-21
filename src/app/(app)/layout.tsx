@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Briefcase,
   LayoutDashboard,
@@ -27,7 +27,8 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { useStore } from '@/lib/store';
+import { store, useStore, notify } from '@/lib/store';
+import React from 'react';
 
 const navItems = [
   { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
@@ -55,14 +56,33 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { currentUser } = useStore();
   const pageTitle = pageTitles[pathname] || 'Tableau de Bord';
+
+  React.useEffect(() => {
+    // If there's no current user, redirect to login page.
+    if (!currentUser) {
+      router.push('/login');
+    }
+  }, [currentUser, router]);
+
+  const handleLogout = () => {
+    store.currentUser = null;
+    notify();
+    // The useEffect above will handle the redirect.
+  };
 
   const accessibleNavItems = navItems.filter(item => {
     if (!item.roles) return true; // public item
     if (!currentUser) return false; // if no user, hide role-based item
     return item.roles.includes(currentUser.role);
   });
+  
+  // Don't render anything until the redirection check has happened
+  if (!currentUser) {
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -90,7 +110,7 @@ export default function AppLayout({
         <SidebarFooter className="p-2 border-t">
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton variant="outline">
+              <SidebarMenuButton variant="outline" onClick={handleLogout}>
                 <LogOut />
                 <span>Déconnexion</span>
               </SidebarMenuButton>
