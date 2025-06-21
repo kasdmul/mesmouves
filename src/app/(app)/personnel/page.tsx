@@ -292,6 +292,8 @@ export default function PersonnelPage() {
     store.salaryHistory = [];
     store.functionHistory = [];
     store.contractHistory = [];
+    store.departmentHistory = [];
+    store.entityHistory = [];
     notify();
   };
 

@@ -63,6 +63,25 @@ export type ContractChange = {
   motif: string;
 };
 
+export type DepartmentChange = {
+  date: string;
+  matricule: string;
+  noms: string;
+  ancienneValeur: string;
+  nouvelleValeur: string;
+  motif: string;
+};
+
+export type EntityChange = {
+  date: string;
+  matricule: string;
+  noms: string;
+  ancienneValeur: string;
+  nouvelleValeur: string;
+  motif: string;
+};
+
+
 // --- Data Store ---
 // This acts as our in-memory database.
 export const store = {
@@ -72,6 +91,8 @@ export const store = {
   salaryHistory: [] as SalaryChange[],
   functionHistory: [] as FunctionChange[],
   contractHistory: [] as ContractChange[],
+  departmentHistory: [] as DepartmentChange[],
+  entityHistory: [] as EntityChange[],
 };
 
 // --- State Management ---
