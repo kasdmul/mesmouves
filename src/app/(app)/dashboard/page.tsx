@@ -4,6 +4,7 @@ import React from 'react';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -13,9 +14,17 @@ import {
   UserMinus,
   UserPlus,
   Users,
-  TrendingDown,
 } from 'lucide-react';
 import { useStore, store } from '@/lib/store';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
 
 /**
  * Parses a date string from various common formats.
@@ -62,6 +71,17 @@ function parseFlexibleDate(dateString: string): Date | null {
 
   return null;
 }
+
+const chartConfig = {
+  Entrées: {
+    label: 'Entrées',
+    color: 'hsl(var(--primary))',
+  },
+  Sorties: {
+    label: 'Sorties',
+    color: 'hsl(var(--destructive))',
+  },
+} satisfies ChartConfig;
 
 export default function DashboardPage() {
   useStore(); // Subscribe to store changes
@@ -113,67 +133,51 @@ export default function DashboardPage() {
     return departments.size;
   }, [store.employees]);
 
-  const { monthlyRate, yearlyRate } = React.useMemo(() => {
+  const monthlyMovements = React.useMemo(() => {
     const today = new Date();
     const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
+    const monthNames = [
+      'Jan',
+      'Fév',
+      'Mar',
+      'Avr',
+      'Mai',
+      'Juin',
+      'Juil',
+      'Août',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Déc',
+    ];
 
-    // Yearly calcs
-    const activeEmployeesToday = store.employees.filter(
-      (e) => e.status === 'Actif'
-    ).length;
+    const data = monthNames.map((month) => ({
+      name: month,
+      Entrées: 0,
+      Sorties: 0,
+    }));
 
-    const hiresThisYear = store.employees.filter((employee) => {
+    store.employees.forEach((employee) => {
       const hireDate = parseFlexibleDate(employee.dateEmbauche);
-      return hireDate && hireDate.getFullYear() === currentYear;
-    }).length;
+      if (hireDate && hireDate.getFullYear() === currentYear) {
+        const monthIndex = hireDate.getMonth();
+        if (data[monthIndex]) {
+          data[monthIndex]['Entrées'] += 1;
+        }
+      }
 
-    const departuresThisYear = store.employees.filter((employee) => {
-      if (employee.status !== 'Parti') return false;
-      const departureDate = parseFlexibleDate(employee.dateDepart || '');
-      return departureDate && departureDate.getFullYear() === currentYear;
-    }).length;
+      if (employee.status === 'Parti') {
+        const departureDate = parseFlexibleDate(employee.dateDepart || '');
+        if (departureDate && departureDate.getFullYear() === currentYear) {
+          const monthIndex = departureDate.getMonth();
+          if (data[monthIndex]) {
+            data[monthIndex]['Sorties'] += 1;
+          }
+        }
+      }
+    });
 
-    const employeesAtStartOfYear =
-      activeEmployeesToday - hiresThisYear + departuresThisYear;
-    const avgEmployeesYear =
-      (employeesAtStartOfYear + activeEmployeesToday) / 2;
-    const yearlyRate =
-      avgEmployeesYear > 0 ? (departuresThisYear / avgEmployeesYear) * 100 : 0;
-
-    // Monthly calcs
-    const hiresThisMonth = store.employees.filter((employee) => {
-      const hireDate = parseFlexibleDate(employee.dateEmbauche);
-      return (
-        hireDate &&
-        hireDate.getFullYear() === currentYear &&
-        hireDate.getMonth() === currentMonth
-      );
-    }).length;
-
-    const departuresThisMonth = store.employees.filter((employee) => {
-      if (employee.status !== 'Parti') return false;
-      const departureDate = parseFlexibleDate(employee.dateDepart || '');
-      return (
-        departureDate &&
-        departureDate.getFullYear() === currentYear &&
-        departureDate.getMonth() === currentMonth
-      );
-    }).length;
-
-    const employeesAtStartOfMonth =
-      activeEmployeesToday - hiresThisMonth + departuresThisMonth;
-    const avgEmployeesMonth =
-      (employeesAtStartOfMonth + activeEmployeesToday) / 2;
-    const monthlyRate =
-      avgEmployeesMonth > 0
-        ? (departuresThisMonth / avgEmployeesMonth) * 100
-        : 0;
-
-    return {
-      monthlyRate: monthlyRate.toFixed(2),
-      yearlyRate: yearlyRate.toFixed(2),
-    };
+    return data.slice(0, today.getMonth() + 1);
   }, [store.employees]);
 
   return (
@@ -235,33 +239,53 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Taux de Rotation
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
+          <CardHeader>
+            <CardTitle>Mouvements de Personnel (Cette Année)</CardTitle>
+            <CardDescription>
+              Graphique des entrées et sorties mensuelles.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{monthlyRate}%</div>
-            <p className="text-xs text-muted-foreground">Ce mois-ci</p>
-            <div className="mt-4 text-2xl font-bold">{yearlyRate}%</div>
-            <p className="text-xs text-muted-foreground">Cette année</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Taux d'Attrition
-            </CardTitle>
-            <TrendingDown className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{monthlyRate}%</div>
-            <p className="text-xs text-muted-foreground">Ce mois-ci</p>
-            <div className="mt-4 text-2xl font-bold">{yearlyRate}%</div>
-            <p className="text-xs text-muted-foreground">Cette année</p>
+          <CardContent className="pb-4">
+            <div className="h-[300px]">
+              <ChartContainer config={chartConfig} className="h-full w-full">
+                <BarChart data={monthlyMovements} accessibilityLayer>
+                  <CartesianGrid vertical={false} />
+                  <XAxis
+                    dataKey="name"
+                    tickLine={false}
+                    tickMargin={10}
+                    axisLine={false}
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tickMargin={10}
+                    allowDecimals={false}
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent indicator="dot" />}
+                  />
+                  <Legend content={<ChartLegendContent />} />
+                  <Bar
+                    dataKey="Entrées"
+                    fill="var(--color-Entrées)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="Sorties"
+                    fill="var(--color-Sorties)"
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
