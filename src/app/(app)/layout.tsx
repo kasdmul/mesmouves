@@ -88,7 +88,7 @@ export default function AppLayout({
     <SidebarProvider>
       <Sidebar>
         <SidebarHeader className="border-b">
-          <h1 className="text-2xl font-semibold tracking-tight">RH Insights</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Gestion de Carrière</h1>
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
