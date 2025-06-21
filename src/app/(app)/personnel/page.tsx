@@ -24,6 +24,7 @@ import {
   MoreHorizontal,
   Trash2,
   Calendar as CalendarIcon,
+  Upload,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -73,6 +74,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import Papa from 'papaparse';
 
 export default function PersonnelPage() {
   useStore();
@@ -104,6 +106,92 @@ export default function PersonnelPage() {
     Employee['status'] | undefined
   >();
 
+  const csvInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImportClick = () => {
+    csvInputRef.current?.click();
+  };
+
+  const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          const importedData = results.data;
+          if (!importedData || !Array.isArray(importedData)) {
+            console.error('Invalid CSV data received');
+            alert('Données CSV invalides reçues.');
+            return;
+          }
+
+          const newEmployees: Employee[] = importedData
+            .map((row: any): Employee | null => {
+              if (!row.Matricule || !row.Noms || !row.Poste) {
+                return null;
+              }
+              return {
+                matricule: row.Matricule,
+                noms: row.Noms,
+                email:
+                  row.Email ||
+                  `${row.Noms.toLowerCase().replace(/\s/g, '.')}@example.com`,
+                entite: row.Entité || 'N/A',
+                departement: row.Département || 'N/A',
+                poste: row.Poste,
+                salaire: parseFloat(row['Salaire de Base']) || 0,
+                typeContrat: row['Type de Contrat'] || 'N/A',
+                dateEmbauche:
+                  row['Date de Début'] ||
+                  row["Date d'embauche"] ||
+                  format(new Date(), 'dd/MM/yyyy'),
+                periodeEssai:
+                  parseInt(
+                    row["Période d'essai (mois)"] ||
+                      row["Période d'essai (jours)"] ||
+                      row["Période d'essai"] ||
+                      '0',
+                    10
+                  ) || 0,
+                status: row.Statut === 'Parti' ? 'Parti' : 'Actif',
+                dateDepart: row['Date de départ'],
+              };
+            })
+            .filter((e): e is Employee => e !== null);
+
+          const existingMatricules = new Set(
+            store.employees.map((e) => e.matricule)
+          );
+          const uniqueNewEmployees = newEmployees.filter(
+            (ne) => !existingMatricules.has(ne.matricule)
+          );
+
+          if (uniqueNewEmployees.length > 0) {
+            store.employees.push(...uniqueNewEmployees);
+            notify();
+            alert(
+              `${uniqueNewEmployees.length} employé(s) importé(s) avec succès !`
+            );
+          } else {
+            alert(
+              'Aucun nouvel employé à importer ou les données sont invalides/dupliquées.'
+            );
+          }
+          
+          if (csvInputRef.current) {
+            csvInputRef.current.value = '';
+          }
+        },
+        error: (error) => {
+          console.error("Erreur d'analyse CSV:", error);
+          alert("Une erreur est survenue lors de l'analyse du fichier CSV.");
+        }
+      });
+    }
+  };
+
   const parseDate = (dateString?: string): Date | undefined => {
     if (!dateString) return undefined;
     try {
@@ -130,83 +218,6 @@ export default function PersonnelPage() {
       setEditingStatus(undefined);
     }
   }, [editingEmployee]);
-
-  React.useEffect(() => {
-    const handleCsvImport = (event: Event) => {
-      if (
-        !(event instanceof CustomEvent) ||
-        !window.location.pathname.includes('/personnel')
-      ) {
-        return;
-      }
-
-      const importedData = event.detail;
-      if (!importedData || !Array.isArray(importedData)) {
-        console.error('Invalid CSV data received');
-        return;
-      }
-
-      const newEmployees: Employee[] = importedData
-        .map((row: any): Employee | null => {
-          if (!row.Matricule || !row.Noms || !row.Poste) {
-            return null;
-          }
-          return {
-            matricule: row.Matricule,
-            noms: row.Noms,
-            email:
-              row.Email ||
-              `${row.Noms.toLowerCase().replace(/\s/g, '.')}@example.com`,
-            entite: row.Entité || 'N/A',
-            departement: row.Département || 'N/A',
-            poste: row.Poste,
-            salaire: parseFloat(row['Salaire de Base']) || 0,
-            typeContrat: row['Type de Contrat'] || 'N/A',
-            dateEmbauche:
-              row['Date de Début'] ||
-              row["Date d'embauche"] ||
-              format(new Date(), 'dd/MM/yyyy'),
-            periodeEssai:
-              parseInt(
-                row["Période d'essai (mois)"] ||
-                  row["Période d'essai (jours)"] ||
-                  row["Période d'essai"] ||
-                  '0',
-                10
-              ) || 0,
-            status: row.Statut === 'Parti' ? 'Parti' : 'Actif',
-            dateDepart: row['Date de départ'],
-          };
-        })
-        .filter((e): e is Employee => e !== null);
-
-      const existingMatricules = new Set(
-        store.employees.map((e) => e.matricule)
-      );
-      const uniqueNewEmployees = newEmployees.filter(
-        (ne) => !existingMatricules.has(ne.matricule)
-      );
-
-      store.employees.push(...uniqueNewEmployees);
-      notify();
-
-      if (uniqueNewEmployees.length > 0) {
-        alert(
-          `${uniqueNewEmployees.length} employé(s) importé(s) avec succès !`
-        );
-      } else {
-        alert(
-          'Aucun nouvel employé à importer ou les données sont invalides/dupliquées.'
-        );
-      }
-    };
-
-    window.addEventListener('csvDataLoaded', handleCsvImport);
-
-    return () => {
-      window.removeEventListener('csvDataLoaded', handleCsvImport);
-    };
-  }, []);
 
   const handleAddEmployee = (event: React.FormEvent) => {
     event.preventDefault();
@@ -330,6 +341,17 @@ export default function PersonnelPage() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
+              <Button onClick={handleImportClick}>
+                <Upload className="mr-2 h-4 w-4" />
+                Importer CSV
+              </Button>
+              <input
+                type="file"
+                ref={csvInputRef}
+                accept=".csv"
+                onChange={handleFileSelected}
+                className="hidden"
+              />
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>

@@ -11,9 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar as CalendarIcon, DollarSign, Plus, Briefcase, FileText, History, Landmark, Building, Network } from 'lucide-react';
+import { Calendar as CalendarIcon, DollarSign, Briefcase, FileText, History, Landmark, Building, Network } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 import { store, notify, useStore, SalaryChange, FunctionChange, ContractChange, DepartmentChange, EntityChange, Employee } from '@/lib/store';
 
 function SalaryChangeContent() {
@@ -879,15 +878,6 @@ function GlobalHistoryContent() {
 export default function MouvementPageContainer() {
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button asChild>
-          <Link href="/recruitment">
-            <Plus className="mr-2 h-4 w-4" />
-            Recrutement
-          </Link>
-        </Button>
-      </div>
-
       <Tabs defaultValue="historique" className="w-full">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="salaire">

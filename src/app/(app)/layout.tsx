@@ -11,8 +11,6 @@ import {
   Users,
   ArrowRightLeft,
 } from 'lucide-react';
-import { useRef, type ChangeEvent } from 'react';
-import Papa from 'papaparse';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -65,38 +63,6 @@ export default function AppLayout({
 }) {
   const pathname = usePathname();
   const pageTitle = pageTitles[pathname] || 'Tableau de Bord';
-  const csvInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImportClick = () => {
-    csvInputRef.current?.click();
-  };
-
-  const handleFileSelected = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        complete: (results) => {
-          console.log(`Données CSV importées pour ${pathname}:`, results.data);
-          
-          // Use a custom event to pass data to the active page component
-          const event = new CustomEvent('csvDataLoaded', { detail: results.data });
-          window.dispatchEvent(event);
-
-          // Reset file input so the same file can be selected again
-          if (csvInputRef.current) {
-            csvInputRef.current.value = '';
-          }
-        },
-        error: (error) => {
-          console.error("Erreur d'analyse CSV:", error);
-          alert("Une erreur est survenue lors de l'analyse du fichier CSV.");
-        }
-      });
-    }
-  };
 
   return (
     <SidebarProvider>
@@ -184,21 +150,6 @@ export default function AppLayout({
                 </DialogFooter>
               </DialogContent>
             </Dialog>
-            <Button
-              size="sm"
-              className="hidden sm:flex"
-              onClick={handleImportClick}
-            >
-              Importer CSV
-            </Button>
-            <input
-              type="file"
-              id="csvFileInput"
-              ref={csvInputRef}
-              accept=".csv"
-              onChange={handleFileSelected}
-              className="hidden"
-            />
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage
