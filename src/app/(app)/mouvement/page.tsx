@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -11,9 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar as CalendarIcon, DollarSign, Briefcase, FileText, History, Landmark, Building, Network } from 'lucide-react';
+import { Calendar as CalendarIcon, DollarSign, Briefcase, FileText, History, Landmark, Building, Network, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { store, notify, useStore, SalaryChange, FunctionChange, ContractChange, DepartmentChange, EntityChange, Employee } from '@/lib/store';
+import Papa from 'papaparse';
+
 
 function SalaryChangeContent() {
   useStore(); // Subscribe to store updates
@@ -830,15 +833,57 @@ function GlobalHistoryContent() {
       ...store.departmentHistory.map(item => ({ ...item, type: 'Changement de Département' })),
       ...store.entityHistory.map(item => ({ ...item, type: 'Changement d\'Entité' })),
   ].sort((a, b) => {
-      const dateA = new Date(a.date.split('/').reverse().join('-')).getTime();
-      const dateB = new Date(b.date.split('/').reverse().join('-')).getTime();
-      return dateB - dateA;
+      try {
+        const dateA = new Date(a.date.split('/').reverse().join('-')).getTime();
+        const dateB = new Date(b.date.split('/').reverse().join('-')).getTime();
+        if (isNaN(dateA) || isNaN(dateB)) return 0;
+        return dateB - dateA;
+      } catch (e) {
+        return 0;
+      }
   });
+
+  const handleExport = () => {
+    if (allHistory.length === 0) return;
+
+    const dataToExport = allHistory.map(item => ({
+      "DATE": item.date,
+      "MATRICULE": item.matricule,
+      "NOMS": item.noms,
+      "TYPE DE MOUVEMENT": item.type,
+      "ANCIENNE VALEUR": item.ancienneValeur,
+      "NOUVELLE VALEUR": item.nouvelleValeur,
+      "MOTIF": item.motif,
+    }));
+
+    const csv = Papa.unparse(dataToExport);
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'historique_global_mouvements.csv');
+    document.body.appendChild(link);
+    link.click();
+
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <Card className="mt-6">
       <CardHeader>
-        <CardTitle>Historique Global des Mouvements</CardTitle>
+        <div className="flex items-center justify-between gap-4">
+            <div className='flex-1'>
+                <CardTitle>Historique Global des Mouvements</CardTitle>
+                <CardDescription className="mt-2">
+                    Exporter l'historique complet de tous les mouvements du personnel au format CSV, compatible avec Excel.
+                </CardDescription>
+            </div>
+          <Button onClick={handleExport} disabled={allHistory.length === 0}>
+            <FileDown className="mr-2 h-4 w-4" />
+            Exporter en Excel
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-lg border">
