@@ -15,17 +15,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
@@ -107,49 +96,6 @@ export default function AppLayout({
             </h2>
           </div>
           <div className="flex items-center gap-4">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  Changer le mot de passe
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Changer le mot de passe</DialogTitle>
-                  <DialogDescription>
-                    Mettez à jour votre mot de passe ici. Cliquez sur Enregistrer lorsque vous avez terminé.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label
-                      htmlFor="current-password"
-                      className="text-right"
-                    >
-                      Actuel
-                    </Label>
-                    <Input
-                      id="current-password"
-                      type="password"
-                      className="col-span-3"
-                    />
-                  </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="new-password" className="text-right">
-                      Nouveau
-                    </Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      className="col-span-3"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Enregistrer</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
             <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage

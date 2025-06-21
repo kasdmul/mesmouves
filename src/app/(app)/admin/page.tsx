@@ -46,6 +46,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
@@ -55,6 +56,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 
 export default function AdminPage() {
   useStore();
@@ -115,6 +117,45 @@ export default function AdminPage() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">Changer le mot de passe</Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Changer le mot de passe</DialogTitle>
+                  <DialogDescription>
+                    Mettez à jour votre mot de passe ici. Cliquez sur
+                    Enregistrer lorsque vous avez terminé.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="current-password" className="text-right">
+                      Actuel
+                    </Label>
+                    <Input
+                      id="current-password"
+                      type="password"
+                      className="col-span-3"
+                    />
+                  </div>
+                  <div className="grid grid-cols-4 items-center gap-4">
+                    <Label htmlFor="new-password" className="text-right">
+                      Nouveau
+                    </Label>
+                    <Input
+                      id="new-password"
+                      type="password"
+                      className="col-span-3"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit">Enregistrer</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <Button>
               <PlusCircle className="mr-2 h-4 w-4" />
               Ajouter un utilisateur
@@ -128,7 +169,9 @@ export default function AdminPage() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Êtes-vous absolument sûr ?
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
                     Cette action est irréversible. Cela supprimera
                     définitivement tous les utilisateurs.
