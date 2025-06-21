@@ -9,6 +9,7 @@ export type Employee = {
   matricule: string;
   noms: string;
   email: string;
+  sexe: 'Homme' | 'Femme' | 'N/A';
   entite: string;
   departement: string;
   poste: string;

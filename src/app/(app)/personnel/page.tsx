@@ -91,6 +91,7 @@ export default function PersonnelPage() {
   const emailInputRef = React.useRef<HTMLInputElement>(null);
   const posteInputRef = React.useRef<HTMLInputElement>(null);
   const periodeEssaiInputRef = React.useRef<HTMLInputElement>(null);
+  const [addSexe, setAddSexe] = React.useState<Employee['sexe']>();
   const [hireDate, setHireDate] = React.useState<Date | undefined>();
   const [department, setDepartment] = React.useState<string>();
   const [entity, setEntity] = React.useState<string>();
@@ -106,6 +107,7 @@ export default function PersonnelPage() {
   const [editingStatus, setEditingStatus] = React.useState<
     Employee['status'] | undefined
   >();
+  const [editingSexe, setEditingSexe] = React.useState<Employee['sexe']>();
   const [editingDepartment, setEditingDepartment] = React.useState<string | undefined>();
   const [editingEntity, setEditingEntity] = React.useState<string | undefined>();
   const [editingWorkLocation, setEditingWorkLocation] = React.useState<string | undefined>();
@@ -115,6 +117,14 @@ export default function PersonnelPage() {
 
   const handleImportClick = () => {
     csvInputRef.current?.click();
+  };
+  
+  const getSexe = (sexe: string | undefined): Employee['sexe'] => {
+      if (!sexe) return 'N/A';
+      const s = sexe.trim().toLowerCase();
+      if (s === 'femme' || s === 'f') return 'Femme';
+      if (s === 'homme' || s === 'h' || s === 'm') return 'Homme';
+      return 'N/A';
   };
 
   const handleFileSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -143,6 +153,7 @@ export default function PersonnelPage() {
                 email:
                   row.Email ||
                   `${row.Noms.toLowerCase().replace(/\s/g, '.')}@example.com`,
+                sexe: getSexe(row.Sexe),
                 entite: row.Entité || 'N/A',
                 departement: row.Département || 'N/A',
                 lieuTravail: row['Lieu de travail'] || 'N/A',
@@ -239,6 +250,7 @@ export default function PersonnelPage() {
       setEditingHireDate(parseDate(editingEmployee.dateEmbauche));
       setEditingDepartureDate(parseDate(editingEmployee.dateDepart));
       setEditingStatus(editingEmployee.status);
+      setEditingSexe(editingEmployee.sexe);
       setEditingDepartment(editingEmployee.departement);
       setEditingEntity(editingEmployee.entite);
       setEditingWorkLocation(editingEmployee.lieuTravail);
@@ -246,6 +258,7 @@ export default function PersonnelPage() {
       setEditingHireDate(undefined);
       setEditingDepartureDate(undefined);
       setEditingStatus(undefined);
+      setEditingSexe(undefined);
       setEditingDepartment(undefined);
       setEditingEntity(undefined);
       setEditingWorkLocation(undefined);
@@ -260,6 +273,7 @@ export default function PersonnelPage() {
         `E${Math.floor(Math.random() * 1000)}`,
       noms: nomsInputRef.current?.value || '',
       email: emailInputRef.current?.value || '',
+      sexe: addSexe || 'N/A',
       entite: entity || 'N/A',
       departement: department || 'N/A',
       lieuTravail: workLocation || 'N/A',
@@ -278,6 +292,7 @@ export default function PersonnelPage() {
       if (matriculeInputRef.current) matriculeInputRef.current.value = '';
       if (nomsInputRef.current) nomsInputRef.current.value = '';
       if (emailInputRef.current) emailInputRef.current.value = '';
+      setAddSexe(undefined);
       setEntity(undefined);
       setDepartment(undefined);
       setWorkLocation(undefined);
@@ -304,6 +319,7 @@ export default function PersonnelPage() {
       ...editingEmployee,
       noms: formData.get('noms-edit') as string,
       email: formData.get('email-edit') as string,
+      sexe: editingSexe || editingEmployee.sexe,
       entite: editingEntity || editingEmployee.entite,
       departement: editingDepartment || editingEmployee.departement,
       lieuTravail: editingWorkLocation || editingEmployee.lieuTravail,
@@ -360,6 +376,7 @@ export default function PersonnelPage() {
     (employee) =>
       employee.noms.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.sexe.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.entite.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.departement.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.lieuTravail.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -443,6 +460,21 @@ export default function PersonnelPage() {
                           className="col-span-3"
                           required
                         />
+                      </div>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="add-sexe" className="text-right">
+                          Sexe
+                        </Label>
+                        <Select value={addSexe} onValueChange={(v) => setAddSexe(v as Employee['sexe'])}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner le sexe" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Homme">Homme</SelectItem>
+                            <SelectItem value="Femme">Femme</SelectItem>
+                            <SelectItem value="N/A">Non spécifié</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                        <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="entity" className="text-right">
@@ -599,7 +631,7 @@ export default function PersonnelPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employé</TableHead>
-                  <TableHead className="hidden md:table-cell">Entité</TableHead>
+                  <TableHead>Sexe</TableHead>
                   <TableHead className="hidden md:table-cell">
                     Département
                   </TableHead>
@@ -608,9 +640,6 @@ export default function PersonnelPage() {
                   </TableHead>
                   <TableHead>Poste</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    Date de Début
-                  </TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -639,7 +668,7 @@ export default function PersonnelPage() {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell">{employee.entite}</TableCell>
+                    <TableCell>{employee.sexe}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       {employee.departement}
                     </TableCell>
@@ -651,9 +680,6 @@ export default function PersonnelPage() {
                       >
                         {employee.status}
                       </Badge>
-                    </TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {employee.dateEmbauche}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -767,6 +793,21 @@ export default function PersonnelPage() {
                   className="col-span-3"
                   required
                 />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="edit-sexe" className="text-right">
+                  Sexe
+                </Label>
+                <Select value={editingSexe} onValueChange={(v) => setEditingSexe(v as Employee['sexe'])}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner le sexe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Homme">Homme</SelectItem>
+                    <SelectItem value="Femme">Femme</SelectItem>
+                    <SelectItem value="N/A">Non spécifié</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
                <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="entite-edit" className="text-right">

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -10,10 +11,10 @@ import {
   Shield,
   Users,
   ArrowRightLeft,
+  PieChart,
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +33,7 @@ const navItems = [
   { href: '/recruitment', label: 'Recrutement', icon: Users },
   { href: '/personnel', label: 'Gestion du Personnel', icon: Briefcase },
   { href: '/mouvement', label: 'Mouvement', icon: ArrowRightLeft },
+  { href: '/reports', label: 'Rapports', icon: PieChart },
   { href: '/settings', label: 'Paramètres Généraux', icon: Settings },
   { href: '/admin', label: 'Panneau Admin', icon: Shield },
 ];
@@ -41,6 +43,7 @@ const pageTitles: { [key: string]: string } = {
   '/recruitment': 'Recrutement',
   '/personnel': 'Gestion du Personnel',
   '/mouvement': 'Mouvement',
+  '/reports': 'Rapports',
   '/settings': 'Paramètres Généraux',
   '/admin': 'Panneau Admin',
 };
