@@ -234,70 +234,41 @@ export default function DashboardPage() {
     const alerts: { employee: Employee; location: string; duration: number }[] = [];
     const activeEmployees = store.employees.filter((e) => e.status === 'Actif');
 
+    // Create a map of the last location change date for each employee
+    const lastChangeDateMap = new Map<string, Date>();
+    store.workLocationHistory.forEach(change => {
+        const changeDate = parseFlexibleDate(change.date);
+        if (!changeDate) return;
+
+        const existingDate = lastChangeDateMap.get(change.matricule);
+        if (!existingDate || changeDate > existingDate) {
+            lastChangeDateMap.set(change.matricule, changeDate);
+        }
+    });
+
     for (const employee of activeEmployees) {
-      const hireDate = parseFlexibleDate(employee.dateEmbauche);
-      if (!hireDate) continue;
-
-      // Get and sort location history for the employee
-      const locationHistory = store.workLocationHistory
-        .filter((h) => h.matricule === employee.matricule)
-        .sort((a, b) => {
-          const dateA = parseFlexibleDate(a.date);
-          const dateB = parseFlexibleDate(b.date);
-          // If dates are invalid, don't sort, but it's better to handle them
-          if (!dateA) return 1;
-          if (!dateB) return -1;
-          return dateA.getTime() - dateB.getTime();
-        });
-
-      const locationDurations: { [location: string]: number } = {};
-
-      if (locationHistory.length === 0) {
-        // No location changes, calculate duration from hire date to today
-        const duration = differenceInMonths(today, hireDate);
-        if (employee.lieuTravail && employee.lieuTravail !== "N/A") {
-            locationDurations[employee.lieuTravail] = duration;
-        }
-      } else {
-        // Employee has location changes, calculate duration for each period
-        let lastDate = hireDate;
+        // Determine the start date of the current assignment
+        const lastChangeDate = lastChangeDateMap.get(employee.matricule);
+        const hireDate = parseFlexibleDate(employee.dateEmbauche);
         
-        // Calculate duration for each historical location
-        for (const change of locationHistory) {
-          const changeDate = parseFlexibleDate(change.date);
-          if (!changeDate) continue;
-          
-          const location = change.ancienneValeur;
-          const duration = differenceInMonths(changeDate, lastDate);
+        // The assignment starts from the last move, or from the hire date if there are no moves.
+        const assignmentStartDate = lastChangeDate || hireDate;
 
-          if(location && location !== "N/A") {
-             locationDurations[location] = (locationDurations[location] || 0) + duration;
-          }
-          
-          lastDate = changeDate;
+        if (assignmentStartDate) {
+            const durationInMonths = differenceInMonths(today, assignmentStartDate);
+            
+            if (durationInMonths >= 48) {
+                alerts.push({
+                    employee: employee,
+                    location: employee.lieuTravail,
+                    duration: durationInMonths,
+                });
+            }
         }
-
-        // Calculate duration for the current location (from the last change date to today)
-        const currentLocation = employee.lieuTravail;
-        const currentDuration = differenceInMonths(today, lastDate);
-        if (currentLocation && currentLocation !== "N/A") {
-           locationDurations[currentLocation] = (locationDurations[currentLocation] || 0) + currentDuration;
-        }
-      }
-
-      // Check if any location duration exceeds the threshold (48 months)
-      for (const [location, duration] of Object.entries(locationDurations)) {
-        if (duration >= 48) {
-          alerts.push({
-            employee: employee,
-            location: location,
-            duration: duration,
-          });
-        }
-      }
     }
 
-    return alerts.sort((a, b) => a.employee.noms.localeCompare(b.employee.noms));
+    // Sort by longest duration first
+    return alerts.sort((a, b) => b.duration - a.duration);
   }, [store.employees, store.workLocationHistory]);
 
 
@@ -408,7 +379,7 @@ export default function DashboardPage() {
             {employeesWithLongAssignments.length > 0 ? (
               <div className="space-y-4">
                 {employeesWithLongAssignments.map(({ employee, location, duration }) => (
-                  <div key={employee.matricule + location} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                  <div key={employee.matricule} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
                     <div>
                       <p className="font-semibold">{employee.noms}</p>
                       <p className="text-sm text-muted-foreground">
