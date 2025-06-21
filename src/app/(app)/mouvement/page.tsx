@@ -23,7 +23,6 @@ function SalaryChangeContent() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [newSalary, setNewSalary] = React.useState('');
   const [reason, setReason] = React.useState('');
-  const [newDepartment, setNewDepartment] = React.useState('');
 
   const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
 
@@ -32,7 +31,6 @@ function SalaryChangeContent() {
     setDate(new Date());
     setNewSalary('');
     setReason('');
-    setNewDepartment('');
   }
 
   const handleApplyChange = () => {
@@ -60,9 +58,6 @@ function SalaryChangeContent() {
     const employeeToUpdate = store.employees.find(e => e.matricule === selectedEmployee.matricule);
     if (employeeToUpdate) {
         employeeToUpdate.salaire = newSalaryValue;
-        if (newDepartment) {
-            employeeToUpdate.departement = newDepartment;
-        }
     }
     
     notify();
@@ -141,10 +136,6 @@ function SalaryChangeContent() {
               <Label htmlFor="reason-salary">Motif du Changement</Label>
               <Input id="reason-salary" placeholder="Motif du Changement" value={reason} onChange={e => setReason(e.target.value)} />
             </div>
-             <div className="space-y-2">
-              <Label htmlFor="new-department-salary">Nouveau Département (si applicable)</Label>
-              <Input id="new-department-salary" placeholder={selectedEmployee?.departement || ''} value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
-            </div>
           </div>
           <div className="flex justify-end">
             <Button onClick={handleApplyChange}>Appliquer le Changement</Button>
@@ -196,7 +187,6 @@ function FunctionChangeContent() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [newFunction, setNewFunction] = React.useState('');
   const [reason, setReason] = React.useState('');
-  const [newDepartment, setNewDepartment] = React.useState('');
 
   const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
   
@@ -205,7 +195,6 @@ function FunctionChangeContent() {
     setDate(new Date());
     setNewFunction('');
     setReason('');
-    setNewDepartment('');
   }
 
   const handleApplyChange = () => {
@@ -227,9 +216,6 @@ function FunctionChangeContent() {
     const employeeToUpdate = store.employees.find(emp => emp.matricule === selectedEmployee.matricule);
     if (employeeToUpdate) {
         employeeToUpdate.poste = newFunction;
-        if (newDepartment) {
-            employeeToUpdate.departement = newDepartment;
-        }
     }
 
     notify();
@@ -304,10 +290,6 @@ function FunctionChangeContent() {
               <Label htmlFor="reason-function">Motif du Changement</Label>
               <Input id="reason-function" placeholder="Motif du Changement" value={reason} onChange={e => setReason(e.target.value)} />
             </div>
-             <div className="space-y-2">
-              <Label htmlFor="new-department-function">Nouveau Département (si applicable)</Label>
-              <Input id="new-department-function" placeholder={selectedEmployee?.departement || ''} value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
-            </div>
           </div>
           <div className="flex justify-end">
             <Button onClick={handleApplyChange}>Appliquer le Changement</Button>
@@ -359,7 +341,6 @@ function ContractChangeContent() {
   const [date, setDate] = React.useState<Date | undefined>(new Date());
   const [newContractType, setNewContractType] = React.useState<string | undefined>();
   const [reason, setReason] = React.useState('');
-  const [newDepartment, setNewDepartment] = React.useState('');
 
   const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
   
@@ -368,7 +349,6 @@ function ContractChangeContent() {
     setDate(new Date());
     setNewContractType(undefined);
     setReason('');
-    setNewDepartment('');
   }
 
   const handleApplyChange = () => {
@@ -377,18 +357,13 @@ function ContractChangeContent() {
       return;
     }
 
-    let finalMotif = reason;
-    if (newDepartment && newDepartment !== selectedEmployee.departement) {
-        finalMotif += ` (Département de "${selectedEmployee.departement}" vers "${newDepartment}")`;
-    }
-
     const newChange: ContractChange = {
       date: format(date, 'dd/MM/yyyy'),
       matricule: selectedEmployee.matricule,
       noms: selectedEmployee.noms,
       ancienneValeur: selectedEmployee.typeContrat,
       nouvelleValeur: newContractType,
-      motif: finalMotif,
+      motif: reason,
     };
     
     store.contractHistory.unshift(newChange);
@@ -396,9 +371,6 @@ function ContractChangeContent() {
     const employeeToUpdate = store.employees.find(emp => emp.matricule === selectedEmployee.matricule);
     if(employeeToUpdate) {
         employeeToUpdate.typeContrat = newContractType;
-        if(newDepartment) {
-            employeeToUpdate.departement = newDepartment;
-        }
     }
 
     notify();
@@ -482,10 +454,6 @@ function ContractChangeContent() {
             <div className="space-y-2">
               <Label htmlFor="reason-contract">Motif du Changement</Label>
               <Input id="reason-contract" placeholder="Motif du Changement" value={reason} onChange={e => setReason(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-department-contract">Nouveau Département (si applicable)</Label>
-              <Input id="new-department-contract" placeholder={selectedEmployee?.departement || ''} value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
             </div>
           </div>
           <div className="flex justify-end">
