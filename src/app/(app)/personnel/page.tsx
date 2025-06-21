@@ -320,6 +320,7 @@ export default function PersonnelPage() {
     store.contractHistory = [];
     store.departmentHistory = [];
     store.entityHistory = [];
+    store.workLocationHistory = [];
     notify();
   };
 

@@ -83,6 +83,15 @@ export type EntityChange = {
   motif: string;
 };
 
+export type WorkLocationChange = {
+  date: string;
+  matricule: string;
+  noms: string;
+  ancienneValeur: string;
+  nouvelleValeur: string;
+  motif: string;
+};
+
 
 // --- Data Store ---
 // This acts as our in-memory database.
@@ -95,6 +104,7 @@ export const store = {
   contractHistory: [] as ContractChange[],
   departmentHistory: [] as DepartmentChange[],
   entityHistory: [] as EntityChange[],
+  workLocationHistory: [] as WorkLocationChange[],
   departments: ['Marketing', 'Ventes', 'Technique', 'Ressources Humaines', 'Finance'] as string[],
   entities: ['Siège Social', 'Filiale Nord', 'Filiale Sud', 'Usine de Production'] as string[],
   workLocations: ['Télétravail', 'Bureau Principal', 'Site Client A', 'Site Client B'] as string[],

@@ -12,9 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Calendar } from '@/components/ui/calendar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Calendar as CalendarIcon, DollarSign, Briefcase, FileText, History, Landmark, Building, Network, FileDown } from 'lucide-react';
+import { Calendar as CalendarIcon, DollarSign, Briefcase, FileText, History, Landmark, Building, Network, FileDown, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { store, notify, useStore, SalaryChange, FunctionChange, ContractChange, DepartmentChange, EntityChange, Employee } from '@/lib/store';
+import { store, notify, useStore, SalaryChange, FunctionChange, ContractChange, DepartmentChange, EntityChange, Employee, WorkLocationChange } from '@/lib/store';
 import Papa from 'papaparse';
 
 
@@ -827,8 +827,171 @@ function EntityChangeContent() {
   );
 }
 
+function WorkLocationChangeContent() {
+  useStore();
 
-type GlobalHistoryItem = (SalaryChange | FunctionChange | ContractChange | DepartmentChange | EntityChange) & { type: string };
+  const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
+  const [date, setDate] = React.useState<Date | undefined>(new Date());
+  const [newWorkLocation, setNewWorkLocation] = React.useState<string | undefined>();
+  const [reason, setReason] = React.useState('');
+
+  const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
+  
+  const resetFields = () => {
+    setSelectedMatricule(undefined);
+    setDate(new Date());
+    setNewWorkLocation(undefined);
+    setReason('');
+  }
+
+  const handleApplyChange = () => {
+    if (!selectedEmployee || !newWorkLocation || !reason || !date) {
+      alert('Veuillez remplir tous les champs obligatoires.');
+      return;
+    }
+
+    const newChange: WorkLocationChange = {
+      date: format(date, 'dd/MM/yyyy'),
+      matricule: selectedEmployee.matricule,
+      noms: selectedEmployee.noms,
+      ancienneValeur: selectedEmployee.lieuTravail,
+      nouvelleValeur: newWorkLocation,
+      motif: reason,
+    };
+    store.workLocationHistory.unshift(newChange);
+
+    const employeeToUpdate = store.employees.find(emp => emp.matricule === selectedEmployee.matricule);
+    if (employeeToUpdate) {
+        employeeToUpdate.lieuTravail = newWorkLocation;
+    }
+
+    notify();
+    resetFields();
+  };
+
+  return (
+    <div className="space-y-8 mt-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MapPin className="h-6 w-6" />
+            <span>Changement de Lieu de Travail</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <h3 className="text-lg font-medium">Appliquer un Changement</h3>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="employee-select-work-location">Sélectionner Employé</Label>
+              <Select value={selectedMatricule} onValueChange={setSelectedMatricule}>
+                <SelectTrigger id="employee-select-work-location">
+                  <SelectValue placeholder="Choisir un employé" />
+                </SelectTrigger>
+                <SelectContent>
+                  {store.employees.map(employee => (
+                    <SelectItem key={employee.matricule} value={employee.matricule}>
+                      {employee.noms}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="noms-work-location">Noms</Label>
+              <Input id="noms-work-location" value={selectedEmployee?.noms || ''} className="bg-gray-100" readOnly />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="change-date-work-location">Date de l'application du changement</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "dd/MM/yyyy") : <span>Choisir une date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="current-work-location">Lieu de Travail Actuel</Label>
+              <Input id="current-work-location" value={selectedEmployee?.lieuTravail || ''} className="bg-gray-100" readOnly />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-work-location">Nouveau Lieu de Travail</Label>
+               <Select value={newWorkLocation} onValueChange={setNewWorkLocation}>
+                <SelectTrigger id="new-work-location">
+                  <SelectValue placeholder="Sélectionner un lieu de travail" />
+                </SelectTrigger>
+                <SelectContent>
+                  {store.workLocations.map(loc => (
+                    <SelectItem key={loc} value={loc}>{loc}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="reason-work-location">Motif du Changement</Label>
+              <Input id="reason-work-location" placeholder="Motif du Changement" value={reason} onChange={e => setReason(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleApplyChange}>Appliquer le Changement</Button>
+          </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Historique des Changements de Lieu de Travail</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>DATE</TableHead>
+                  <TableHead>MATRICULE</TableHead>
+                  <TableHead>NOMS</TableHead>
+                  <TableHead>ANCIENNE VALEUR</TableHead>
+                  <TableHead>NOUVELLE VALEUR</TableHead>
+                  <TableHead>MOTIF</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {store.workLocationHistory.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell>{item.date}</TableCell>
+                    <TableCell>{item.matricule}</TableCell>
+                    <TableCell>{item.noms}</TableCell>
+                    <TableCell>{item.ancienneValeur}</TableCell>
+                    <TableCell>{item.nouvelleValeur}</TableCell>
+                    <TableCell>{item.motif}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
+type GlobalHistoryItem = (SalaryChange | FunctionChange | ContractChange | DepartmentChange | EntityChange | WorkLocationChange) & { type: string };
 
 function GlobalHistoryContent() {
   useStore();
@@ -850,6 +1013,7 @@ function GlobalHistoryContent() {
       ...store.contractHistory.map(item => ({ ...item, type: 'Changement de Contrat' })),
       ...store.departmentHistory.map(item => ({ ...item, type: 'Changement de Département' })),
       ...store.entityHistory.map(item => ({ ...item, type: 'Changement d\'Entité' })),
+      ...store.workLocationHistory.map(item => ({ ...item, type: 'Changement de Lieu de Travail' })),
   ].sort((a, b) => {
       try {
         const dateA = new Date(a.date.split('/').reverse().join('-')).getTime();
@@ -942,7 +1106,7 @@ export default function MouvementPageContainer() {
   return (
     <div className="space-y-4">
       <Tabs defaultValue="historique" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="salaire">
             <Landmark className="mr-2 h-4 w-4" />
             Salaire
@@ -958,6 +1122,10 @@ export default function MouvementPageContainer() {
           <TabsTrigger value="entite">
             <Network className="mr-2 h-4 w-4" />
             Entité
+          </TabsTrigger>
+          <TabsTrigger value="lieu-travail">
+            <MapPin className="mr-2 h-4 w-4" />
+            Lieu de Travail
           </TabsTrigger>
           <TabsTrigger value="contrat">
             <FileText className="mr-2 h-4 w-4" />
@@ -979,6 +1147,9 @@ export default function MouvementPageContainer() {
         </TabsContent>
         <TabsContent value="entite">
           <EntityChangeContent />
+        </TabsContent>
+        <TabsContent value="lieu-travail">
+          <WorkLocationChangeContent />
         </TabsContent>
         <TabsContent value="contrat">
           <ContractChangeContent />
