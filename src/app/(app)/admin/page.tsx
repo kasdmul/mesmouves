@@ -1,31 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { PlusCircle, MoreHorizontal, Trash2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,8 +11,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import React from 'react';
-import { store, notify, useStore, type User } from '@/lib/store';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -48,6 +30,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -56,18 +46,63 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { notify, store, useStore, type User } from '@/lib/store';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import React from 'react';
 
 export default function AdminPage() {
-  useStore();
+  const { currentUser } = useStore();
+
+  const [isAddUserOpen, setIsAddUserOpen] = React.useState(false);
   const [editingUser, setEditingUser] = React.useState<User | null>(null);
-  const [newRole, setNewRole] = React.useState<string | undefined>();
+
+  // Add User State
+  const [newUserName, setNewUserName] = React.useState('');
+  const [newUserEmail, setNewUserEmail] = React.useState('');
+  const [newUserRole, setNewUserRole] = React.useState<User['role']>();
+  const [newUserPassword, setNewUserPassword] = React.useState('');
+
+  // Edit User State
+  const [editingRole, setEditingRole] = React.useState<string | undefined>();
 
   React.useEffect(() => {
     if (editingUser) {
-      setNewRole(editingUser.role);
+      setEditingRole(editingUser.role);
     }
   }, [editingUser]);
+  
+  const resetAddUserForm = () => {
+    setNewUserName('');
+    setNewUserEmail('');
+    setNewUserRole(undefined);
+    setNewUserPassword('');
+    setIsAddUserOpen(false);
+  }
+
+  const handleAddUser = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!newUserName || !newUserEmail || !newUserRole || !newUserPassword) {
+      alert("Veuillez remplir tous les champs.");
+      return;
+    }
+    const newUser: User = {
+      name: newUserName,
+      email: newUserEmail,
+      role: newUserRole,
+      password: newUserPassword,
+    };
+    store.users.push(newUser);
+    notify();
+    resetAddUserForm();
+  };
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -81,22 +116,34 @@ export default function AdminPage() {
   };
 
   const handleDeleteUser = (email: string) => {
+    // Prevent deleting superadmin
+    if (store.users.find(u => u.email === email)?.role === 'superadmin') {
+        alert("Le super administrateur ne peut pas être supprimé.");
+        return;
+    }
     store.users = store.users.filter((u) => u.email !== email);
     notify();
   };
 
   const handleDeleteAllUsers = () => {
-    store.users = [];
+    // Keep superadmin
+    store.users = store.users.filter(u => u.role === 'superadmin');
     notify();
   };
 
   const handleUpdateUserRole = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingUser || !newRole) return;
+    if (!editingUser || !editingRole) return;
+
+    // Admin cannot change superadmin or other admin roles
+    if (currentUser?.role === 'admin' && (editingUser.role === 'superadmin' || editingUser.role === 'admin')) {
+      alert("Vous n'avez pas la permission de modifier ce rôle.");
+      return;
+    }
 
     const updatedUser: User = {
       ...editingUser,
-      role: newRole,
+      role: editingRole as User['role'],
     };
 
     store.users = store.users.map((u) =>
@@ -105,6 +152,14 @@ export default function AdminPage() {
     notify();
     setEditingUser(null);
   };
+  
+  // Filter users based on current user's role
+  const displayedUsers = store.currentUser?.role === 'admin'
+    ? store.users.filter(u => u.role !== 'superadmin')
+    : store.users;
+
+  // Check if current user has management permissions
+  const canManage = currentUser?.role === 'superadmin' || currentUser?.role === 'admin';
 
   return (
     <Card>
@@ -116,76 +171,118 @@ export default function AdminPage() {
               Gérez les utilisateurs et leurs permissions.
             </CardDescription>
           </div>
-          <div className="flex items-center gap-2">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline">Changer le mot de passe</Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Changer le mot de passe</DialogTitle>
-                  <DialogDescription>
-                    Mettez à jour votre mot de passe ici. Cliquez sur
-                    Enregistrer lorsque vous avez terminé.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="current-password" className="text-right">
-                      Actuel
-                    </Label>
-                    <Input
-                      id="current-password"
-                      type="password"
-                      className="col-span-3"
-                    />
+          {canManage && (
+            <div className="flex items-center gap-2">
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Changer le mot de passe</Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Changer le mot de passe</DialogTitle>
+                    <DialogDescription>
+                      Mettez à jour votre mot de passe ici. Cliquez sur
+                      Enregistrer lorsque vous avez terminé.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="current-password" className="text-right">
+                        Actuel
+                      </Label>
+                      <Input
+                        id="current-password"
+                        type="password"
+                        className="col-span-3"
+                      />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="new-password" className="text-right">
+                        Nouveau
+                      </Label>
+                      <Input
+                        id="new-password"
+                        type="password"
+                        className="col-span-3"
+                      />
+                    </div>
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="new-password" className="text-right">
-                      Nouveau
-                    </Label>
-                    <Input
-                      id="new-password"
-                      type="password"
-                      className="col-span-3"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button type="submit">Enregistrer</Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-            <Button>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Ajouter un utilisateur
-            </Button>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive">
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Tout supprimer
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>
-                    Êtes-vous absolument sûr ?
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Cette action est irréversible. Cela supprimera
-                    définitivement tous les utilisateurs.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDeleteAllUsers}>
-                    Confirmer
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+                  <DialogFooter>
+                    <Button type="submit">Enregistrer</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
+                 <DialogTrigger asChild>
+                    <Button>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Ajouter un utilisateur
+                    </Button>
+                 </DialogTrigger>
+                 <DialogContent className="sm:max-w-md">
+                    <form onSubmit={handleAddUser}>
+                        <DialogHeader>
+                            <DialogTitle>Ajouter un Nouvel Utilisateur</DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="new-user-name">Nom Utilisateur</Label>
+                                <Input id="new-user-name" value={newUserName} onChange={(e) => setNewUserName(e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="new-user-email">Email</Label>
+                                <Input id="new-user-email" type="email" value={newUserEmail} onChange={(e) => setNewUserEmail(e.target.value)} required />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="new-user-role">Rôle</Label>
+                                <Select value={newUserRole} onValueChange={(v) => setNewUserRole(v as User['role'])} required>
+                                    <SelectTrigger><SelectValue placeholder="Sélectionner un rôle" /></SelectTrigger>
+                                    <SelectContent>
+                                        {currentUser?.role === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
+                                        {currentUser?.role === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
+                                        <SelectItem value="membre">Membre</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="new-user-password">Mot de passe</Label>
+                                <Input id="new-user-password" type="password" value={newUserPassword} onChange={(e) => setNewUserPassword(e.target.value)} required />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="button" variant="secondary" onClick={resetAddUserForm}>Annuler</Button>
+                            <Button type="submit">Sauvegarder</Button>
+                        </DialogFooter>
+                    </form>
+                 </DialogContent>
+              </Dialog>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Tout supprimer
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Êtes-vous absolument sûr ?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action est irréversible. Cela supprimera
+                      définitivement tous les utilisateurs sauf le super administrateur.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAllUsers}>
+                      Confirmer
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
@@ -195,13 +292,15 @@ export default function AdminPage() {
               <TableRow>
                 <TableHead>Utilisateur</TableHead>
                 <TableHead>Rôle</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                {canManage && (
+                    <TableHead>
+                        <span className="sr-only">Actions</span>
+                    </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {store.users.map((user) => (
+              {displayedUsers.map((user) => (
                 <TableRow key={user.email}>
                   <TableCell>
                     <div className="flex items-center gap-3">
@@ -226,56 +325,62 @@ export default function AdminPage() {
                       {user.role}
                     </Badge>
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          aria-haspopup="true"
-                          size="icon"
-                          variant="ghost"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                          Modifier le rôle
-                        </DropdownMenuItem>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem
-                              onSelect={(e) => e.preventDefault()}
-                              className="text-destructive"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Supprimer
-                            </DropdownMenuItem>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>
-                                Êtes-vous sûr ?
-                              </AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Cette action est irréversible. L'utilisateur sera
-                                définitivement supprimé.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Annuler</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteUser(user.email)}
+                  {canManage && (
+                      <TableCell>
+                        {
+                          // Superadmin can edit anyone. Admin can only edit members.
+                          (currentUser?.role === 'superadmin' || (currentUser?.role === 'admin' && user.role === 'membre')) && user.email !== currentUser?.email &&
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                aria-haspopup="true"
+                                size="icon"
+                                variant="ghost"
                               >
-                                Confirmer
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem onClick={() => setEditingUser(user)}>
+                                Modifier le rôle
+                              </DropdownMenuItem>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Êtes-vous sûr ?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Cette action est irréversible. L'utilisateur sera
+                                      définitivement supprimé.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteUser(user.email)}
+                                    >
+                                      Confirmer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        }
+                      </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -301,16 +406,16 @@ export default function AdminPage() {
                 </Label>
                 <Select
                   name="role"
-                  value={newRole}
-                  onValueChange={(value: string) => setNewRole(value)}
+                  value={editingRole}
+                  onValueChange={(value: string) => setEditingRole(value)}
                 >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Sélectionner un rôle" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="viewer">Viewer</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
-                    <SelectItem value="superadmin">Superadmin</SelectItem>
+                    {currentUser?.role === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
+                    {currentUser?.role === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
+                    <SelectItem value="membre">Membre</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

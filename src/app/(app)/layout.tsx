@@ -27,6 +27,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
+import { useStore } from '@/lib/store';
 
 const navItems = [
   { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
@@ -34,8 +35,8 @@ const navItems = [
   { href: '/personnel', label: 'Gestion du Personnel', icon: Briefcase },
   { href: '/mouvement', label: 'Mouvement', icon: ArrowRightLeft },
   { href: '/reports', label: 'Rapports', icon: PieChart },
-  { href: '/settings', label: 'Paramètres Généraux', icon: Settings },
-  { href: '/admin', label: 'Panneau Admin', icon: Shield },
+  { href: '/settings', label: 'Paramètres Généraux', icon: Settings, roles: ['superadmin', 'admin'] },
+  { href: '/admin', label: 'Panneau Admin', icon: Shield, roles: ['superadmin', 'admin'] },
 ];
 
 const pageTitles: { [key: string]: string } = {
@@ -54,7 +55,14 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { currentUser } = useStore();
   const pageTitle = pageTitles[pathname] || 'Tableau de Bord';
+
+  const accessibleNavItems = navItems.filter(item => {
+    if (!item.roles) return true; // public item
+    if (!currentUser) return false; // if no user, hide role-based item
+    return item.roles.includes(currentUser.role);
+  });
 
   return (
     <SidebarProvider>
@@ -64,7 +72,7 @@ export default function AppLayout({
         </SidebarHeader>
         <SidebarContent className="p-2">
           <SidebarMenu>
-            {navItems.map((item) => (
+            {accessibleNavItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <SidebarMenuButton
                   asChild
@@ -106,13 +114,13 @@ export default function AppLayout({
                   alt="@user"
                   data-ai-hint="person"
                 />
-                <AvatarFallback>U</AvatarFallback>
+                <AvatarFallback>{currentUser?.name.charAt(0) ?? 'U'}</AvatarFallback>
               </Avatar>
               <span
                 id="userDisplayName"
                 className="text-sm font-medium hidden md:block"
               >
-                Utilisateur
+                {currentUser?.name ?? 'Utilisateur'}
               </span>
             </div>
           </div>

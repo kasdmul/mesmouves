@@ -77,7 +77,7 @@ import {
 import Papa from 'papaparse';
 
 export default function PersonnelPage() {
-  useStore();
+  const { currentUser } = useStore();
 
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
@@ -114,6 +114,8 @@ export default function PersonnelPage() {
 
 
   const csvInputRef = React.useRef<HTMLInputElement>(null);
+
+  const canManage = currentUser?.role !== 'membre';
 
   const handleImportClick = () => {
     csvInputRef.current?.click();
@@ -396,17 +398,21 @@ export default function PersonnelPage() {
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Button onClick={handleImportClick}>
-                <Upload className="mr-2 h-4 w-4" />
-                Importer CSV
-              </Button>
-              <input
-                type="file"
-                ref={csvInputRef}
-                accept=".csv"
-                onChange={handleFileSelected}
-                className="hidden"
-              />
+              {canManage && (
+                <>
+                  <Button onClick={handleImportClick}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Importer CSV
+                  </Button>
+                  <input
+                    type="file"
+                    ref={csvInputRef}
+                    accept=".csv"
+                    onChange={handleFileSelected}
+                    className="hidden"
+                  />
+                </>
+              )}
               <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
@@ -587,32 +593,34 @@ export default function PersonnelPage() {
                   </form>
                 </DialogContent>
               </Dialog>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Tout supprimer
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Êtes-vous absolutely sûr ?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Cette action est irréversible. Cela supprimera
-                      définitivement tous les employés et leur historique
-                      associé.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAllEmployees}>
-                      Confirmer
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              {canManage && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Tout supprimer
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>
+                          Êtes-vous absolutely sûr ?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Cette action est irréversible. Cela supprimera
+                          définitivement tous les employés et leur historique
+                          associé.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteAllEmployees}>
+                          Confirmer
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+              )}
             </div>
           </div>
           <div className="relative mt-4 w-full max-w-md">
@@ -700,38 +708,40 @@ export default function PersonnelPage() {
                           >
                             Modifier
                           </DropdownMenuItem>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <DropdownMenuItem
-                                onSelect={(e) => e.preventDefault()}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Supprimer
-                              </DropdownMenuItem>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Êtes-vous sûr ?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Cette action est irréversible. L'employé sera
-                                  définitivement supprimé.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() =>
-                                    handleDeleteEmployee(employee.matricule)
-                                  }
-                                >
-                                  Confirmer
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {canManage && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <DropdownMenuItem
+                                    onSelect={(e) => e.preventDefault()}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Supprimer
+                                  </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>
+                                      Êtes-vous sûr ?
+                                    </AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Cette action est irréversible. L'employé sera
+                                      définitivement supprimé.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() =>
+                                        handleDeleteEmployee(employee.matricule)
+                                      }
+                                    >
+                                      Confirmer
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

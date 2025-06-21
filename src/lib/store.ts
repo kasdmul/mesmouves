@@ -36,7 +36,8 @@ export type OpenPosition = {
 export type User = {
   name: string;
   email: string;
-  role: string;
+  role: 'superadmin' | 'admin' | 'membre';
+  password?: string;
 };
 
 export type SalaryChange = {
@@ -99,10 +100,19 @@ export type WorkLocationChange = {
 
 // --- Data Store ---
 // This acts as our in-memory database.
+const initialUsers: User[] = [
+  { name: 'Super Admin', email: 'super@rh.com', role: 'superadmin', password: 'password' },
+  { name: 'Admin User', email: 'admin@rh.com', role: 'admin', password: 'password' },
+  { name: 'Member User', email: 'member@rh.com', role: 'membre', password: 'password' },
+];
+
 export const store = {
   employees: [] as Employee[],
   openPositions: [] as OpenPosition[],
-  users: [] as User[],
+  users: initialUsers,
+  // For demonstration, we'll set the currentUser. In a real app, this would be null
+  // until a user logs in.
+  currentUser: initialUsers[0] as User | null, 
   salaryHistory: [] as SalaryChange[],
   functionHistory: [] as FunctionChange[],
   contractHistory: [] as ContractChange[],
@@ -127,6 +137,8 @@ export function useStore() {
       listeners = listeners.filter((l) => l !== forceUpdate);
     };
   }, []);
+
+  return store;
 }
 
 export function notify() {
