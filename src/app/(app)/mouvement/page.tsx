@@ -506,7 +506,7 @@ function DepartmentChangeContent() {
 
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
   const [date, setDate] = React.useState<Date | undefined>(new Date());
-  const [newDepartment, setNewDepartment] = React.useState('');
+  const [newDepartment, setNewDepartment] = React.useState<string | undefined>();
   const [reason, setReason] = React.useState('');
 
   const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
@@ -514,7 +514,7 @@ function DepartmentChangeContent() {
   const resetFields = () => {
     setSelectedMatricule(undefined);
     setDate(new Date());
-    setNewDepartment('');
+    setNewDepartment(undefined);
     setReason('');
   }
 
@@ -605,7 +605,16 @@ function DepartmentChangeContent() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-department">Nouveau Département</Label>
-              <Input id="new-department" placeholder="Nouveau Département" value={newDepartment} onChange={e => setNewDepartment(e.target.value)} />
+               <Select value={newDepartment} onValueChange={setNewDepartment}>
+                <SelectTrigger id="new-department">
+                  <SelectValue placeholder="Sélectionner un département" />
+                </SelectTrigger>
+                <SelectContent>
+                  {store.departments.map(dep => (
+                    <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="reason-department">Motif du Changement</Label>
@@ -660,7 +669,7 @@ function EntityChangeContent() {
 
   const [selectedMatricule, setSelectedMatricule] = React.useState<string | undefined>();
   const [date, setDate] = React.useState<Date | undefined>(new Date());
-  const [newEntity, setNewEntity] = React.useState('');
+  const [newEntity, setNewEntity] = React.useState<string | undefined>();
   const [reason, setReason] = React.useState('');
 
   const selectedEmployee = store.employees.find(e => e.matricule === selectedMatricule);
@@ -668,7 +677,7 @@ function EntityChangeContent() {
   const resetFields = () => {
     setSelectedMatricule(undefined);
     setDate(new Date());
-    setNewEntity('');
+    setNewEntity(undefined);
     setReason('');
   }
 
@@ -759,7 +768,16 @@ function EntityChangeContent() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="new-entity">Nouvelle Entité</Label>
-              <Input id="new-entity" placeholder="Nouvelle Entité" value={newEntity} onChange={e => setNewEntity(e.target.value)} />
+              <Select value={newEntity} onValueChange={setNewEntity}>
+                <SelectTrigger id="new-entity">
+                  <SelectValue placeholder="Sélectionner une entité" />
+                </SelectTrigger>
+                <SelectContent>
+                  {store.entities.map(ent => (
+                    <SelectItem key={ent} value={ent}>{ent}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="reason-entity">Motif du Changement</Label>

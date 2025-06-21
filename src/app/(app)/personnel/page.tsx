@@ -85,17 +85,17 @@ export default function PersonnelPage() {
     null
   );
 
-  // Refs for Add Dialog
+  // --- Add Form State ---
   const matriculeInputRef = React.useRef<HTMLInputElement>(null);
   const nomsInputRef = React.useRef<HTMLInputElement>(null);
   const emailInputRef = React.useRef<HTMLInputElement>(null);
-  const entiteInputRef = React.useRef<HTMLInputElement>(null);
-  const departementInputRef = React.useRef<HTMLInputElement>(null);
   const posteInputRef = React.useRef<HTMLInputElement>(null);
   const periodeEssaiInputRef = React.useRef<HTMLInputElement>(null);
   const [hireDate, setHireDate] = React.useState<Date | undefined>();
+  const [department, setDepartment] = React.useState<string>();
+  const [entity, setEntity] = React.useState<string>();
 
-  // State for Edit Dialog
+  // --- Edit Form State ---
   const [editingHireDate, setEditingHireDate] = React.useState<
     Date | undefined
   >();
@@ -105,6 +105,9 @@ export default function PersonnelPage() {
   const [editingStatus, setEditingStatus] = React.useState<
     Employee['status'] | undefined
   >();
+  const [editingDepartment, setEditingDepartment] = React.useState<string | undefined>();
+  const [editingEntity, setEditingEntity] = React.useState<string | undefined>();
+
 
   const csvInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -212,10 +215,14 @@ export default function PersonnelPage() {
       setEditingHireDate(parseDate(editingEmployee.dateEmbauche));
       setEditingDepartureDate(parseDate(editingEmployee.dateDepart));
       setEditingStatus(editingEmployee.status);
+      setEditingDepartment(editingEmployee.departement);
+      setEditingEntity(editingEmployee.entite);
     } else {
       setEditingHireDate(undefined);
       setEditingDepartureDate(undefined);
       setEditingStatus(undefined);
+      setEditingDepartment(undefined);
+      setEditingEntity(undefined);
     }
   }, [editingEmployee]);
 
@@ -227,8 +234,8 @@ export default function PersonnelPage() {
         `E${Math.floor(Math.random() * 1000)}`,
       noms: nomsInputRef.current?.value || '',
       email: emailInputRef.current?.value || '',
-      entite: entiteInputRef.current?.value || 'N/A',
-      departement: departementInputRef.current?.value || '',
+      entite: entity || 'N/A',
+      departement: department || 'N/A',
       poste: posteInputRef.current?.value || '',
       salaire: 0,
       typeContrat: 'N/A',
@@ -244,8 +251,8 @@ export default function PersonnelPage() {
       if (matriculeInputRef.current) matriculeInputRef.current.value = '';
       if (nomsInputRef.current) nomsInputRef.current.value = '';
       if (emailInputRef.current) emailInputRef.current.value = '';
-      if (entiteInputRef.current) entiteInputRef.current.value = '';
-      if (departementInputRef.current) departementInputRef.current.value = '';
+      setEntity(undefined);
+      setDepartment(undefined);
       if (posteInputRef.current) posteInputRef.current.value = '';
       if (periodeEssaiInputRef.current)
         periodeEssaiInputRef.current.value = '';
@@ -269,8 +276,8 @@ export default function PersonnelPage() {
       ...editingEmployee,
       noms: formData.get('noms-edit') as string,
       email: formData.get('email-edit') as string,
-      entite: formData.get('entite-edit') as string,
-      departement: formData.get('departement-edit') as string,
+      entite: editingEntity || editingEmployee.entite,
+      departement: editingDepartment || editingEmployee.departement,
       poste: formData.get('poste-edit') as string,
       dateEmbauche: editingHireDate
         ? format(editingHireDate, 'dd/MM/yyyy')
@@ -410,23 +417,31 @@ export default function PersonnelPage() {
                         <Label htmlFor="entity" className="text-right">
                           Entité
                         </Label>
-                        <Input
-                          id="entity"
-                          ref={entiteInputRef}
-                          placeholder="p. ex. Siège Social"
-                          className="col-span-3"
-                        />
+                        <Select value={entity} onValueChange={setEntity}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner une entité" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {store.entities.map(ent => (
+                              <SelectItem key={ent} value={ent}>{ent}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="department" className="text-right">
                           Département
                         </Label>
-                        <Input
-                          id="department"
-                          ref={departementInputRef}
-                          placeholder="p. ex. Marketing"
-                          className="col-span-3"
-                        />
+                         <Select value={department} onValueChange={setDepartment}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner un département" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {store.departments.map(dep => (
+                              <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="role" className="text-right">
@@ -707,23 +722,31 @@ export default function PersonnelPage() {
                 <Label htmlFor="entite-edit" className="text-right">
                   Entité
                 </Label>
-                <Input
-                  id="entite-edit"
-                  name="entite-edit"
-                  defaultValue={editingEmployee?.entite}
-                  className="col-span-3"
-                />
+                <Select value={editingEntity} onValueChange={setEditingEntity}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner une entité" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {store.entities.map(ent => (
+                      <SelectItem key={ent} value={ent}>{ent}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="departement-edit" className="text-right">
                   Département
                 </Label>
-                <Input
-                  id="departement-edit"
-                  name="departement-edit"
-                  defaultValue={editingEmployee?.departement}
-                  className="col-span-3"
-                />
+                <Select value={editingDepartment} onValueChange={setEditingDepartment}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner un département" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {store.departments.map(dep => (
+                      <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="poste-edit" className="text-right">

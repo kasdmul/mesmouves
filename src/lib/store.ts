@@ -1,3 +1,4 @@
+
 'use client';
 
 import type React from 'react';
@@ -93,6 +94,8 @@ export const store = {
   contractHistory: [] as ContractChange[],
   departmentHistory: [] as DepartmentChange[],
   entityHistory: [] as EntityChange[],
+  departments: ['Marketing', 'Ventes', 'Technique', 'Ressources Humaines', 'Finance'] as string[],
+  entities: ['Siège Social', 'Filiale Nord', 'Filiale Sud', 'Usine de Production'] as string[],
 };
 
 // --- State Management ---
