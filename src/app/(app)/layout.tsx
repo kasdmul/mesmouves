@@ -27,7 +27,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { store, useStore, notify } from '@/lib/store';
+import { useStore, notify } from '@/lib/store';
 import React from 'react';
 
 const navItems = [
@@ -57,15 +57,16 @@ export default function AppLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { currentUser } = useStore();
+  const { store, isLoaded } = useStore();
+  const { currentUser } = store;
   const pageTitle = pageTitles[pathname] || 'Tableau de Bord';
 
   React.useEffect(() => {
-    // If there's no current user, redirect to login page.
-    if (!currentUser) {
+    // If there's no current user when data is loaded, redirect to login page.
+    if (isLoaded && !currentUser) {
       router.push('/login');
     }
-  }, [currentUser, router]);
+  }, [isLoaded, currentUser, router]);
 
   const handleLogout = () => {
     store.currentUser = null;
@@ -78,6 +79,21 @@ export default function AppLayout({
     if (!currentUser) return false; // if no user, hide role-based item
     return item.roles.includes(currentUser.role);
   });
+
+  // Show a loading screen until data is loaded from the database
+  if (!isLoaded) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+            <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="text-lg text-muted-foreground">Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
   
   // Don't render anything until the redirection check has happened
   if (!currentUser) {

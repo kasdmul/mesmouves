@@ -97,45 +97,111 @@ export type WorkLocationChange = {
   dureeAffectationMois?: number;
 };
 
-
-// --- Data Store ---
-// This acts as our in-memory database.
-const initialUsers: User[] = [];
-
-export const store = {
-  employees: [] as Employee[],
-  openPositions: [] as OpenPosition[],
-  users: initialUsers,
-  // currentUser will be set after the first user is created, or on login.
-  currentUser: null as User | null, 
-  salaryHistory: [] as SalaryChange[],
-  functionHistory: [] as FunctionChange[],
-  contractHistory: [] as ContractChange[],
-  departmentHistory: [] as DepartmentChange[],
-  entityHistory: [] as EntityChange[],
-  workLocationHistory: [] as WorkLocationChange[],
-  departments: [] as string[],
-  entities: [] as string[],
-  workLocations: [] as string[],
+type StoreType = {
+  employees: Employee[];
+  openPositions: OpenPosition[];
+  users: User[];
+  currentUser: User | null;
+  salaryHistory: SalaryChange[];
+  functionHistory: FunctionChange[];
+  contractHistory: ContractChange[];
+  departmentHistory: DepartmentChange[];
+  entityHistory: EntityChange[];
+  workLocationHistory: WorkLocationChange[];
+  departments: string[];
+  entities: string[];
+  workLocations: string[];
 };
 
+
+// --- Data Store ---
+const initialData: StoreType = {
+  employees: [],
+  openPositions: [],
+  users: [],
+  currentUser: null,
+  salaryHistory: [],
+  functionHistory: [],
+  contractHistory: [],
+  departmentHistory: [],
+  entityHistory: [],
+  workLocationHistory: [],
+  departments: [],
+  entities: [],
+  workLocations: [],
+};
+
+export let store: StoreType = { ...initialData };
+
 // --- State Management ---
-// A simple subscription model to notify components of changes.
 let listeners: React.Dispatch<React.SetStateAction<number>>[] = [];
+let dataIsLoaded = false;
+let dataIsLoading = false;
+let saveTimeout: NodeJS.Timeout | null = null;
+
+async function loadData() {
+  if (dataIsLoaded || dataIsLoading) return;
+  dataIsLoading = true;
+  try {
+    const response = await fetch('/api/data');
+    if (!response.ok) throw new Error('Failed to fetch data');
+    const dataFromServer = await response.json();
+    store = dataFromServer;
+    dataIsLoaded = true;
+  } catch (error) {
+    console.error("Couldn't load data from server, using initial data.", error);
+    store = { ...initialData };
+    // We still mark as loaded to prevent infinite loading on error
+    dataIsLoaded = true;
+  } finally {
+    dataIsLoading = false;
+    // Notify components that data is available
+    listeners.forEach((listener) => listener((c) => c + 1));
+  }
+}
+
+async function saveData() {
+  try {
+    // We make a safe copy of the store to avoid any circular reference issues
+    // although with this simple structure, it's not expected.
+    const dataToSave = JSON.parse(JSON.stringify(store));
+    await fetch('/api/data', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(dataToSave),
+    });
+  } catch (error) {
+    console.error("Couldn't save data to server.", error);
+  }
+}
+
+const debouncedSave = () => {
+  if (saveTimeout) clearTimeout(saveTimeout);
+  saveTimeout = setTimeout(() => {
+    saveData();
+  }, 500); // Debounce saves by 500ms
+};
+
 
 export function useStore() {
   const [, forceUpdate] = useState(0);
 
   useEffect(() => {
     listeners.push(forceUpdate);
+    if (!dataIsLoaded && !dataIsLoading) {
+      loadData();
+    }
     return () => {
       listeners = listeners.filter((l) => l !== forceUpdate);
     };
   }, []);
 
-  return store;
+  return { store, isLoaded: dataIsLoaded };
 }
 
-export function notify() {
+export function notify(shouldSave = true) {
+  if (shouldSave && dataIsLoaded) {
+    debouncedSave();
+  }
   listeners.forEach((listener) => listener((c) => c + 1));
 }

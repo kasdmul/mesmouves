@@ -1,0 +1,16 @@
+
+{
+  "employees": [],
+  "openPositions": [],
+  "users": [],
+  "currentUser": null,
+  "salaryHistory": [],
+  "functionHistory": [],
+  "contractHistory": [],
+  "departmentHistory": [],
+  "entityHistory": [],
+  "workLocationHistory": [],
+  "departments": [],
+  "entities": [],
+  "workLocations": []
+}
