@@ -108,9 +108,9 @@ export const store = {
   departmentHistory: [] as DepartmentChange[],
   entityHistory: [] as EntityChange[],
   workLocationHistory: [] as WorkLocationChange[],
-  departments: ['Marketing', 'Ventes', 'Technique', 'Ressources Humaines', 'Finance'] as string[],
-  entities: ['Siège Social', 'Filiale Nord', 'Filiale Sud', 'Usine de Production'] as string[],
-  workLocations: ['Télétravail', 'Bureau Principal', 'Site Client A', 'Site Client B'] as string[],
+  departments: [] as string[],
+  entities: [] as string[],
+  workLocations: [] as string[],
 };
 
 // --- State Management ---

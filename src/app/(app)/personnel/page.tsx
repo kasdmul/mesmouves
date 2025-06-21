@@ -176,6 +176,27 @@ export default function PersonnelPage() {
 
           if (uniqueNewEmployees.length > 0) {
             store.employees.push(...uniqueNewEmployees);
+
+            const allDepartments = new Set(store.departments);
+            const allEntities = new Set(store.entities);
+            const allWorkLocations = new Set(store.workLocations);
+
+            store.employees.forEach(employee => {
+                if (employee.departement && employee.departement.trim() && employee.departement.trim() !== 'N/A') {
+                    allDepartments.add(employee.departement.trim());
+                }
+                if (employee.entite && employee.entite.trim() && employee.entite.trim() !== 'N/A') {
+                    allEntities.add(employee.entite.trim());
+                }
+                if (employee.lieuTravail && employee.lieuTravail.trim() && employee.lieuTravail.trim() !== 'N/A') {
+                    allWorkLocations.add(employee.lieuTravail.trim());
+                }
+            });
+
+            store.departments = Array.from(allDepartments).sort();
+            store.entities = Array.from(allEntities).sort();
+            store.workLocations = Array.from(allWorkLocations).sort();
+            
             notify();
             alert(
               `${uniqueNewEmployees.length} employé(s) importé(s) avec succès !`
