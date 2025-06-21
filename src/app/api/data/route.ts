@@ -1,9 +1,6 @@
 
 import { NextResponse } from 'next/server';
-import fs from 'fs/promises';
-import path from 'path';
-
-const dbPath = path.resolve(process.cwd(), 'db.json');
+import { db } from '@/lib/firebase-admin';
 
 const initialData = {
     employees: [],
@@ -22,14 +19,22 @@ const initialData = {
 };
 
 async function getData() {
+  if (!db) {
+    console.warn("Firestore is not initialized. Serving initial data. Check server configuration.");
+    return initialData;
+  }
+  
+  const docRef = db.collection('appState').doc('data');
+
   try {
-    await fs.access(dbPath);
-    const data = await fs.readFile(dbPath, 'utf-8');
-    // Merge with initialData to ensure all keys are present even if db.json is from an older version
-    return { ...initialData, ...JSON.parse(data) };
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      await docRef.set(initialData);
+      return initialData;
+    }
+    return { ...initialData, ...doc.data() };
   } catch (error) {
-    // If file doesn't exist or is invalid, create it and return default data.
-    await fs.writeFile(dbPath, JSON.stringify(initialData, null, 2), 'utf-8');
+    console.error('Firestore GET error:', error);
     return initialData;
   }
 }
@@ -40,12 +45,20 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  if (!db) {
+    console.error('Firestore is not initialized. Cannot save data. Check server configuration.');
+    return new NextResponse('Server configuration error: Firestore not initialized.', { status: 500 });
+  }
+
+  const docRef = db.collection('appState').doc('data');
+  
   try {
     const data = await request.json();
-    await fs.writeFile(dbPath, JSON.stringify(data, null, 2), 'utf-8');
+    await docRef.set(data);
     return NextResponse.json({ message: 'Data saved successfully.' });
   } catch (error) {
-    console.error('Failed to save data:', error);
+    console.error('Failed to save data to Firestore:', error);
     return new NextResponse('Failed to save data', { status: 500 });
   }
 }
+
