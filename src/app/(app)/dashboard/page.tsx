@@ -59,25 +59,20 @@ export default function DashboardPage() {
     (e) => e.status === 'Actif'
   ).length;
 
-  const newHiresThisMonth = React.useMemo(() => {
+  const newHiresThisYear = React.useMemo(() => {
     const today = new Date();
-    const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
 
     return store.employees.filter((employee) => {
       const hireDate = parseFlexibleDate(employee.dateEmbauche);
       if (!hireDate) return false;
 
-      return (
-        hireDate.getMonth() === currentMonth &&
-        hireDate.getFullYear() === currentYear
-      );
+      return hireDate.getFullYear() === currentYear;
     }).length;
   }, [store.employees]);
 
-  const departuresThisMonth = React.useMemo(() => {
+  const departuresThisYear = React.useMemo(() => {
     const today = new Date();
-    const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
 
     return store.employees.filter((employee) => {
@@ -86,10 +81,7 @@ export default function DashboardPage() {
       const departureDate = parseFlexibleDate(employee.dateDepart || '');
       if (!departureDate) return false;
 
-      return (
-        departureDate.getMonth() === currentMonth &&
-        departureDate.getFullYear() === currentYear
-      );
+      return departureDate.getFullYear() === currentYear;
     }).length;
   }, [store.employees]);
 
@@ -132,8 +124,8 @@ export default function DashboardPage() {
           <UserPlus className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">+{newHiresThisMonth}</div>
-          <p className="text-xs text-muted-foreground">Ce mois-ci</p>
+          <div className="text-2xl font-bold">+{newHiresThisYear}</div>
+          <p className="text-xs text-muted-foreground">Cette année</p>
         </CardContent>
       </Card>
       <Card>
@@ -142,8 +134,8 @@ export default function DashboardPage() {
           <UserMinus className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">-{departuresThisMonth}</div>
-          <p className="text-xs text-muted-foreground">Ce mois-ci</p>
+          <div className="text-2xl font-bold">-{departuresThisYear}</div>
+          <p className="text-xs text-muted-foreground">Cette année</p>
         </CardContent>
       </Card>
       <Card>
