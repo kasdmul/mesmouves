@@ -28,6 +28,7 @@ export default function SettingsPage() {
   const [workWeekMode, setWorkWeekMode] = React.useState('monday-sunday');
   const [newDepartment, setNewDepartment] = React.useState('');
   const [newEntity, setNewEntity] = React.useState('');
+  const [newWorkLocation, setNewWorkLocation] = React.useState('');
 
   const handleSaveSettings = () => {
     // In a real app, this would save to a database.
@@ -66,11 +67,27 @@ export default function SettingsPage() {
     store.entities = store.entities.filter(e => e !== entity);
     notify();
   };
+  
+  const handleAddWorkLocation = () => {
+    if (newWorkLocation.trim() && !store.workLocations.includes(newWorkLocation.trim())) {
+      store.workLocations.push(newWorkLocation.trim());
+      store.workLocations.sort();
+      notify();
+      setNewWorkLocation('');
+    } else {
+        alert('Ce lieu de travail existe déjà ou le champ est vide.');
+    }
+  };
+
+  const handleDeleteWorkLocation = (location: string) => {
+    store.workLocations = store.workLocations.filter(l => l !== location);
+    notify();
+  };
 
 
   return (
-    <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
-      <Card className="xl:col-span-1">
+    <div className="grid gap-6 md:grid-cols-2">
+      <Card>
         <CardHeader>
           <CardTitle>Paramètres Généraux</CardTitle>
           <CardDescription>
@@ -160,6 +177,36 @@ export default function SettingsPage() {
                     <div key={ent} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary">
                         <span>{ent}</span>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteEntity(ent)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                    </div>
+                ))}
+            </div>
+        </CardContent>
+      </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Gestion des Lieux de Travail</CardTitle>
+          <CardDescription>
+            Ajouter, voir et supprimer les lieux de travail.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+            <div className="flex space-x-2">
+                <Input 
+                    placeholder="Nouveau lieu de travail"
+                    value={newWorkLocation}
+                    onChange={(e) => setNewWorkLocation(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddWorkLocation()}
+                />
+                <Button onClick={handleAddWorkLocation}>Ajouter</Button>
+            </div>
+            <div className="space-y-2 rounded-lg border p-2 h-48 overflow-y-auto">
+                {store.workLocations.map(loc => (
+                    <div key={loc} className="flex items-center justify-between p-2 rounded-md hover:bg-secondary">
+                        <span>{loc}</span>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDeleteWorkLocation(loc)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                     </div>

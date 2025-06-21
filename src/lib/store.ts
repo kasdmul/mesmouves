@@ -12,6 +12,7 @@ export type Employee = {
   entite: string;
   departement: string;
   poste: string;
+  lieuTravail: string;
   salaire: number;
   typeContrat: string;
   dateEmbauche: string; // "Date de Début"
@@ -96,6 +97,7 @@ export const store = {
   entityHistory: [] as EntityChange[],
   departments: ['Marketing', 'Ventes', 'Technique', 'Ressources Humaines', 'Finance'] as string[],
   entities: ['Siège Social', 'Filiale Nord', 'Filiale Sud', 'Usine de Production'] as string[],
+  workLocations: ['Télétravail', 'Bureau Principal', 'Site Client A', 'Site Client B'] as string[],
 };
 
 // --- State Management ---

@@ -94,6 +94,7 @@ export default function PersonnelPage() {
   const [hireDate, setHireDate] = React.useState<Date | undefined>();
   const [department, setDepartment] = React.useState<string>();
   const [entity, setEntity] = React.useState<string>();
+  const [workLocation, setWorkLocation] = React.useState<string>();
 
   // --- Edit Form State ---
   const [editingHireDate, setEditingHireDate] = React.useState<
@@ -107,6 +108,7 @@ export default function PersonnelPage() {
   >();
   const [editingDepartment, setEditingDepartment] = React.useState<string | undefined>();
   const [editingEntity, setEditingEntity] = React.useState<string | undefined>();
+  const [editingWorkLocation, setEditingWorkLocation] = React.useState<string | undefined>();
 
 
   const csvInputRef = React.useRef<HTMLInputElement>(null);
@@ -143,6 +145,7 @@ export default function PersonnelPage() {
                   `${row.Noms.toLowerCase().replace(/\s/g, '.')}@example.com`,
                 entite: row.Entité || 'N/A',
                 departement: row.Département || 'N/A',
+                lieuTravail: row['Lieu de travail'] || 'N/A',
                 poste: row.Poste,
                 salaire: parseFloat(row['Salaire de Base']) || 0,
                 typeContrat: row['Type de Contrat'] || 'N/A',
@@ -217,12 +220,14 @@ export default function PersonnelPage() {
       setEditingStatus(editingEmployee.status);
       setEditingDepartment(editingEmployee.departement);
       setEditingEntity(editingEmployee.entite);
+      setEditingWorkLocation(editingEmployee.lieuTravail);
     } else {
       setEditingHireDate(undefined);
       setEditingDepartureDate(undefined);
       setEditingStatus(undefined);
       setEditingDepartment(undefined);
       setEditingEntity(undefined);
+      setEditingWorkLocation(undefined);
     }
   }, [editingEmployee]);
 
@@ -236,6 +241,7 @@ export default function PersonnelPage() {
       email: emailInputRef.current?.value || '',
       entite: entity || 'N/A',
       departement: department || 'N/A',
+      lieuTravail: workLocation || 'N/A',
       poste: posteInputRef.current?.value || '',
       salaire: 0,
       typeContrat: 'N/A',
@@ -253,6 +259,7 @@ export default function PersonnelPage() {
       if (emailInputRef.current) emailInputRef.current.value = '';
       setEntity(undefined);
       setDepartment(undefined);
+      setWorkLocation(undefined);
       if (posteInputRef.current) posteInputRef.current.value = '';
       if (periodeEssaiInputRef.current)
         periodeEssaiInputRef.current.value = '';
@@ -278,6 +285,7 @@ export default function PersonnelPage() {
       email: formData.get('email-edit') as string,
       entite: editingEntity || editingEmployee.entite,
       departement: editingDepartment || editingEmployee.departement,
+      lieuTravail: editingWorkLocation || editingEmployee.lieuTravail,
       poste: formData.get('poste-edit') as string,
       dateEmbauche: editingHireDate
         ? format(editingHireDate, 'dd/MM/yyyy')
@@ -332,6 +340,7 @@ export default function PersonnelPage() {
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.entite.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.departement.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.lieuTravail.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.poste.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -439,6 +448,21 @@ export default function PersonnelPage() {
                           <SelectContent>
                             {store.departments.map(dep => (
                               <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                       <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="work-location" className="text-right">
+                          Lieu de travail
+                        </Label>
+                        <Select value={workLocation} onValueChange={setWorkLocation}>
+                          <SelectTrigger className="col-span-3">
+                            <SelectValue placeholder="Sélectionner un lieu" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {store.workLocations.map(loc => (
+                              <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -557,6 +581,9 @@ export default function PersonnelPage() {
                   <TableHead className="hidden md:table-cell">
                     Département
                   </TableHead>
+                  <TableHead className="hidden lg:table-cell">
+                    Lieu de travail
+                  </TableHead>
                   <TableHead>Poste</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="hidden lg:table-cell">
@@ -594,6 +621,7 @@ export default function PersonnelPage() {
                     <TableCell className="hidden md:table-cell">
                       {employee.departement}
                     </TableCell>
+                    <TableCell className="hidden lg:table-cell">{employee.lieuTravail}</TableCell>
                     <TableCell>{employee.poste}</TableCell>
                     <TableCell>
                       <Badge
@@ -744,6 +772,21 @@ export default function PersonnelPage() {
                   <SelectContent>
                     {store.departments.map(dep => (
                       <SelectItem key={dep} value={dep}>{dep}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="work-location-edit" className="text-right">
+                  Lieu de travail
+                </Label>
+                <Select value={editingWorkLocation} onValueChange={setEditingWorkLocation}>
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner un lieu" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {store.workLocations.map(loc => (
+                      <SelectItem key={loc} value={loc}>{loc}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
