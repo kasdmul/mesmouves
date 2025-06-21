@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -14,6 +15,7 @@ import {
   UserMinus,
   UserPlus,
   Users,
+  Percent,
 } from 'lucide-react';
 import { useStore, store } from '@/lib/store';
 import {
@@ -86,35 +88,69 @@ const chartConfig = {
 export default function DashboardPage() {
   useStore(); // Subscribe to store changes
 
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+
   const totalEmployees = store.employees.filter(
     (e) => e.status === 'Actif'
   ).length;
 
   const newHiresThisYear = React.useMemo(() => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-
     return store.employees.filter((employee) => {
       const hireDate = parseFlexibleDate(employee.dateEmbauche);
       if (!hireDate) return false;
-
       return hireDate.getFullYear() === currentYear;
     }).length;
-  }, [store.employees]);
+  }, [store.employees, currentYear]);
 
   const departuresThisYear = React.useMemo(() => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
-
     return store.employees.filter((employee) => {
       if (employee.status !== 'Parti') return false;
-
       const departureDate = parseFlexibleDate(employee.dateDepart || '');
       if (!departureDate) return false;
-
       return departureDate.getFullYear() === currentYear;
     }).length;
-  }, [store.employees]);
+  }, [store.employees, currentYear]);
+
+  const employeesAtStartOfYear =
+    totalEmployees - newHiresThisYear + departuresThisYear;
+  const averageEmployeesYear = (employeesAtStartOfYear + totalEmployees) / 2;
+  const turnoverRateYearly =
+    averageEmployeesYear > 0
+      ? (departuresThisYear / averageEmployeesYear) * 100
+      : 0;
+
+  const newHiresThisMonth = React.useMemo(() => {
+    return store.employees.filter((employee) => {
+      const hireDate = parseFlexibleDate(employee.dateEmbauche);
+      if (!hireDate) return false;
+      return (
+        hireDate.getFullYear() === currentYear &&
+        hireDate.getMonth() === currentMonth
+      );
+    }).length;
+  }, [store.employees, currentYear, currentMonth]);
+
+  const departuresThisMonth = React.useMemo(() => {
+    return store.employees.filter((employee) => {
+      if (employee.status !== 'Parti') return false;
+      const departureDate = parseFlexibleDate(employee.dateDepart || '');
+      if (!departureDate) return false;
+      return (
+        departureDate.getFullYear() === currentYear &&
+        departureDate.getMonth() === currentMonth
+      );
+    }).length;
+  }, [store.employees, currentYear, currentMonth]);
+
+  const employeesAtStartOfMonth =
+    totalEmployees - newHiresThisMonth + departuresThisMonth;
+  const averageEmployeesMonth = (employeesAtStartOfMonth + totalEmployees) / 2;
+  const turnoverRateMonthly =
+    averageEmployeesMonth > 0
+      ? (departuresThisMonth / averageEmployeesMonth) * 100
+      : 0;
 
   const openPositions = React.useMemo(() => {
     return store.candidates.filter(
@@ -123,7 +159,6 @@ export default function DashboardPage() {
   }, [store.candidates]);
 
   const totalDepartments = React.useMemo(() => {
-    // Count unique, valid department names from active employees
     const departments = new Set(
       store.employees
         .filter((e) => e.status === 'Actif')
@@ -134,21 +169,9 @@ export default function DashboardPage() {
   }, [store.employees]);
 
   const monthlyMovements = React.useMemo(() => {
-    const today = new Date();
-    const currentYear = today.getFullYear();
     const monthNames = [
-      'Jan',
-      'Fév',
-      'Mar',
-      'Avr',
-      'Mai',
-      'Juin',
-      'Juil',
-      'Août',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Déc',
+      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
+      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc',
     ];
 
     const data = monthNames.map((month) => ({
@@ -178,7 +201,7 @@ export default function DashboardPage() {
     });
 
     return data.slice(0, today.getMonth() + 1);
-  }, [store.employees]);
+  }, [store.employees, currentYear]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -235,6 +258,39 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">{totalDepartments}</div>
             <p className="text-xs text-muted-foreground">Nombre total</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Taux de Rotation (Annuel)
+            </CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {turnoverRateYearly.toFixed(2)}%
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Basé sur les départs de cette année
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Taux de Rotation (Mensuel)
+            </CardTitle>
+            <Percent className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {turnoverRateMonthly.toFixed(2)}%
+            </div>
+            <p className="text-xs text-muted-foreground">Pour le mois en cours</p>
           </CardContent>
         </Card>
       </div>
