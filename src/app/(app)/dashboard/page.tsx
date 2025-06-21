@@ -154,10 +154,8 @@ export default function DashboardPage() {
       : 0;
 
   const openPositions = React.useMemo(() => {
-    return store.candidates.filter(
-      (c) => c.status === 'Nouveau' || c.status === 'Entretien'
-    ).length;
-  }, [store.candidates]);
+    return store.openPositions.filter((p) => p.status === 'Ouvert').length;
+  }, [store.openPositions]);
 
   const totalDepartments = React.useMemo(() => {
     const departments = new Set(

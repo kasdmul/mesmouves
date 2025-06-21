@@ -12,17 +12,20 @@ export type Employee = {
   poste: string;
   salaire: number;
   typeContrat: string;
-  dateEmbauche: string;
-  periodeEssai: number;
+  dateEmbauche: string; // "Date de Début"
+  periodeEssai: number; // in months
   status: 'Actif' | 'Parti';
   dateDepart?: string;
 };
 
-export type Candidate = {
-  name: string;
-  position: string;
-  status: 'Entretien' | 'Offre envoyée' | 'Nouveau' | 'Rejeté';
-  appliedDate: string;
+export type OpenPosition = {
+  id: string;
+  title: string;
+  type: 'Remplacement' | 'Création';
+  openingDate: string;
+  filledDate?: string;
+  description: string;
+  status: 'Ouvert' | 'Pourvu' | 'Annulé';
 };
 
 export type User = {
@@ -62,7 +65,7 @@ export type ContractChange = {
 // This acts as our in-memory database.
 export const store = {
   employees: [] as Employee[],
-  candidates: [] as Candidate[],
+  openPositions: [] as OpenPosition[],
   users: [] as User[],
   salaryHistory: [] as SalaryChange[],
   functionHistory: [] as FunctionChange[],

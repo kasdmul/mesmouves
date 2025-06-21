@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { PlusCircle, Search, MoreHorizontal, Trash2 } from 'lucide-react';
+import { PlusCircle, Search, MoreHorizontal, Trash2, Calendar as CalendarIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -27,7 +27,6 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogFooter,
-  DialogClose,
 } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -55,98 +54,133 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Textarea } from '@/components/ui/textarea';
 import React from 'react';
-import { store, notify, useStore, type Candidate } from '@/lib/store';
+import { store, notify, useStore, type OpenPosition } from '@/lib/store';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 
 export default function RecruitmentPage() {
   useStore();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
-  const [editingCandidate, setEditingCandidate] =
-    React.useState<Candidate | null>(null);
+  const [editingPosition, setEditingPosition] = React.useState<OpenPosition | null>(null);
 
-  const nameInputRef = React.useRef<HTMLInputElement>(null);
-  const positionInputRef = React.useRef<HTMLInputElement>(null);
+  // --- Add Form State ---
+  const addTitleRef = React.useRef<HTMLInputElement>(null);
+  const addDescriptionRef = React.useRef<HTMLTextAreaElement>(null);
+  const [addType, setAddType] = React.useState<'Remplacement' | 'Création'>();
+  const [addOpeningDate, setAddOpeningDate] = React.useState<Date>();
 
-  const [newStatus, setNewStatus] = React.useState<
-    Candidate['status'] | undefined
-  >();
+  // --- Edit Form State ---
+  const [editTitle, setEditTitle] = React.useState('');
+  const [editType, setEditType] = React.useState<'Remplacement' | 'Création'>();
+  const [editOpeningDate, setEditOpeningDate] = React.useState<Date>();
+  const [editFilledDate, setEditFilledDate] = React.useState<Date | undefined>();
+  const [editDescription, setEditDescription] = React.useState('');
+  const [editStatus, setEditStatus] = React.useState<'Ouvert' | 'Pourvu' | 'Annulé'>();
+
+  const resetAddForm = () => {
+    if (addTitleRef.current) addTitleRef.current.value = '';
+    if (addDescriptionRef.current) addDescriptionRef.current.value = '';
+    setAddType(undefined);
+    setAddOpeningDate(undefined);
+    setIsAddDialogOpen(false);
+  };
 
   React.useEffect(() => {
-    if (editingCandidate) {
-      setNewStatus(editingCandidate.status);
+    if (editingPosition) {
+      setEditTitle(editingPosition.title);
+      setEditType(editingPosition.type);
+      try {
+        setEditOpeningDate(new Date(editingPosition.openingDate.split('/').reverse().join('-')));
+        setEditFilledDate(editingPosition.filledDate ? new Date(editingPosition.filledDate.split('/').reverse().join('-')) : undefined);
+      } catch (e) {
+        setEditOpeningDate(new Date());
+        setEditFilledDate(undefined);
+      }
+      setEditDescription(editingPosition.description);
+      setEditStatus(editingPosition.status);
     }
-  }, [editingCandidate]);
+  }, [editingPosition]);
 
-  const handleAddCandidate = (event: React.FormEvent) => {
+  const handleAddPosition = (event: React.FormEvent) => {
     event.preventDefault();
-    const newCandidate: Candidate = {
-      name: nameInputRef.current?.value || '',
-      position: positionInputRef.current?.value || '',
-      status: 'Nouveau',
-      appliedDate: new Date().toISOString().split('T')[0],
-    };
-    if (newCandidate.name && newCandidate.position) {
-      store.candidates.unshift(newCandidate);
-      notify();
-      setIsAddDialogOpen(false);
+    const title = addTitleRef.current?.value;
+    const description = addDescriptionRef.current?.value;
+
+    if (!title || !addType || !addOpeningDate || !description) {
+      alert('Veuillez remplir tous les champs obligatoires.');
+      return;
     }
+
+    const newPosition: OpenPosition = {
+      id: Date.now().toString(),
+      title,
+      type: addType,
+      openingDate: format(addOpeningDate, 'dd/MM/yyyy'),
+      description,
+      status: 'Ouvert',
+    };
+
+    store.openPositions.unshift(newPosition);
+    notify();
+    resetAddForm();
   };
 
-  const handleUpdateCandidate = (event: React.FormEvent) => {
+  const handleUpdatePosition = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingCandidate || !newStatus) return;
+    if (!editingPosition || !editTitle || !editType || !editOpeningDate || !editStatus || !editDescription) {
+      alert("Veuillez remplir tous les champs obligatoires.");
+      return;
+    }
 
-    const form = event.target as HTMLFormElement;
-    const name = (form.elements.namedItem('name-edit') as HTMLInputElement)
-      .value;
-    const position = (
-      form.elements.namedItem('position-edit') as HTMLInputElement
-    ).value;
-
-    const updatedCandidate: Candidate = {
-      ...editingCandidate,
-      name,
-      position,
-      status: newStatus,
+    const updatedPosition: OpenPosition = {
+      ...editingPosition,
+      title: editTitle,
+      type: editType,
+      openingDate: format(editOpeningDate, 'dd/MM/yyyy'),
+      filledDate: editFilledDate && editStatus === 'Pourvu' ? format(editFilledDate, 'dd/MM/yyyy') : undefined,
+      description: editDescription,
+      status: editStatus,
     };
 
-    store.candidates = store.candidates.map((c) =>
-      c.name === editingCandidate.name ? updatedCandidate : c
+    store.openPositions = store.openPositions.map((p) =>
+      p.id === editingPosition.id ? updatedPosition : p
     );
     notify();
-    setEditingCandidate(null);
+    setEditingPosition(null);
   };
-
-  const handleDeleteCandidate = (candidateName: string) => {
-    store.candidates = store.candidates.filter((c) => c.name !== candidateName);
+  
+  const handleDeletePosition = (positionId: string) => {
+    store.openPositions = store.openPositions.filter((p) => p.id !== positionId);
     notify();
   };
 
-  const handleDeleteAllCandidates = () => {
-    store.candidates = [];
+  const handleDeleteAllPositions = () => {
+    store.openPositions = [];
     notify();
   };
-
+  
   const getBadgeVariant = (status: string) => {
     switch (status) {
-      case 'Offre envoyée':
-        return 'default';
-      case 'Entretien':
+      case 'Ouvert':
         return 'secondary';
-      case 'Nouveau':
-        return 'outline';
-      case 'Rejeté':
+      case 'Pourvu':
+        return 'default';
+      case 'Annulé':
         return 'destructive';
       default:
         return 'outline';
     }
   };
 
-  const filteredCandidates = store.candidates.filter(
-    (candidate) =>
-      candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      candidate.position.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPositions = store.openPositions.filter(
+    (position) =>
+      position.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      position.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -157,63 +191,59 @@ export default function RecruitmentPage() {
             <div>
               <CardTitle>Recrutement</CardTitle>
               <CardDescription>
-                Gérez les candidats tout au long du processus de recrutement.
+                Gérez les postes ouverts, à remplacer et pourvus.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Dialog
-                open={isAddDialogOpen}
-                onOpenChange={setIsAddDialogOpen}
-              >
+              <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
                 <DialogTrigger asChild>
                   <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Ajouter un Candidat
+                    Ajouter un Poste
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <form onSubmit={handleAddCandidate}>
+                <DialogContent className="sm:max-w-md">
+                  <form onSubmit={handleAddPosition}>
                     <DialogHeader>
-                      <DialogTitle>Ajouter un nouveau candidat</DialogTitle>
+                      <DialogTitle>Ajouter un nouveau poste</DialogTitle>
                       <DialogDescription>
-                        Remplissez les informations ci-dessous pour ajouter un
-                        nouveau candidat.
+                        Remplissez les informations ci-dessous pour créer un nouveau poste.
                       </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">
-                          Nom
-                        </Label>
-                        <Input
-                          id="name"
-                          name="name"
-                          ref={nameInputRef}
-                          placeholder="p. ex. Jean Dupont"
-                          className="col-span-3"
-                          required
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor="add-title">Intitulé du Poste</Label>
+                        <Input id="add-title" ref={addTitleRef} placeholder="p. ex. Développeur Frontend" required />
                       </div>
-                      <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="position" className="text-right">
-                          Poste
-                        </Label>
-                        <Input
-                          id="position"
-                          name="position"
-                          ref={positionInputRef}
-                          placeholder="p. ex. Développeur Frontend"
-                          className="col-span-3"
-                          required
-                        />
+                      <div className="space-y-2">
+                        <Label htmlFor="add-type">Type de Poste</Label>
+                        <Select value={addType} onValueChange={(v: 'Remplacement' | 'Création') => setAddType(v)} required>
+                          <SelectTrigger id="add-type"><SelectValue placeholder="Sélectionner le type" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Création">Création de poste</SelectItem>
+                            <SelectItem value="Remplacement">Poste à remplacer</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="add-description">Description du poste et tâches</Label>
+                        <Textarea id="add-description" ref={addDescriptionRef} placeholder="Décrire les responsabilités et tâches..." required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="add-opening-date">Date de l'ouverture</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !addOpeningDate && 'text-muted-foreground')}>
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {addOpeningDate ? format(addOpeningDate, 'dd/MM/yyyy') : <span>Choisir une date</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={addOpeningDate} onSelect={setAddOpeningDate} initialFocus /></PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                     <DialogFooter>
-                      <DialogClose asChild>
-                        <Button type="button" variant="secondary">
-                          Annuler
-                        </Button>
-                      </DialogClose>
+                      <Button type="button" variant="secondary" onClick={resetAddForm}>Annuler</Button>
                       <Button type="submit">Sauvegarder</Button>
                     </DialogFooter>
                   </form>
@@ -228,17 +258,15 @@ export default function RecruitmentPage() {
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Êtes-vous absolument sûr ?
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
                     <AlertDialogDescription>
                       Cette action est irréversible. Cela supprimera
-                      définitivement tous les candidats.
+                      définitivement tous les postes.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAllCandidates}>
+                    <AlertDialogAction onClick={handleDeleteAllPositions}>
                       Confirmer
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -249,7 +277,7 @@ export default function RecruitmentPage() {
           <div className="relative mt-4 w-full max-w-md">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher des candidats..."
+              placeholder="Rechercher par intitulé ou description..."
               className="pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -261,82 +289,40 @@ export default function RecruitmentPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nom</TableHead>
-                  <TableHead className="hidden md:table-cell">Poste</TableHead>
+                  <TableHead>Intitulé du Poste</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead className="hidden sm:table-cell">
-                    Date de Candidature
-                  </TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
+                  <TableHead>Date d'ouverture</TableHead>
+                  <TableHead>Date pourvu</TableHead>
+                  <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCandidates.map((candidate) => (
-                  <TableRow key={candidate.name}>
-                    <TableCell className="font-medium">
-                      {candidate.name}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {candidate.position}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getBadgeVariant(candidate.status) as any}>
-                        {candidate.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">
-                      {candidate.appliedDate}
-                    </TableCell>
+                {filteredPositions.map((position) => (
+                  <TableRow key={position.id}>
+                    <TableCell className="font-medium">{position.title}</TableCell>
+                    <TableCell>{position.type}</TableCell>
+                    <TableCell><Badge variant={getBadgeVariant(position.status) as any}>{position.status}</Badge></TableCell>
+                    <TableCell>{position.openingDate}</TableCell>
+                    <TableCell>{position.filledDate || 'N/A'}</TableCell>
                     <TableCell>
                       <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            aria-haspopup="true"
-                            size="icon"
-                            variant="ghost"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
+                        <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem
-                            onClick={() => setEditingCandidate(candidate)}
-                          >
-                            Modifier
-                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setEditingPosition(position)}>Modifier</DropdownMenuItem>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <DropdownMenuItem
-                                onSelect={(e) => e.preventDefault()}
-                                className="text-destructive"
-                              >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Supprimer
-                              </DropdownMenuItem>
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer</DropdownMenuItem>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>
-                                  Êtes-vous sûr ?
-                                </AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Cette action est irréversible. Le candidat
-                                  sera définitivement supprimé.
-                                </AlertDialogDescription>
+                                <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                <AlertDialogDescription>Cette action est irréversible. Le poste sera définitivement supprimé.</AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() =>
-                                    handleDeleteCandidate(candidate.name)
-                                  }
-                                >
-                                  Confirmer
-                                </AlertDialogAction>
+                                <AlertDialogAction onClick={() => handleDeletePosition(position.id)}>Confirmer</AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
@@ -350,74 +336,78 @@ export default function RecruitmentPage() {
           </div>
         </CardContent>
       </Card>
-      <Dialog
-        open={!!editingCandidate}
-        onOpenChange={(isOpen) => !isOpen && setEditingCandidate(null)}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <form onSubmit={handleUpdateCandidate}>
+      
+      {/* Edit Dialog */}
+      <Dialog open={!!editingPosition} onOpenChange={(isOpen) => !isOpen && setEditingPosition(null)}>
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={handleUpdatePosition}>
             <DialogHeader>
-              <DialogTitle>Modifier le candidat</DialogTitle>
+              <DialogTitle>Modifier le Poste</DialogTitle>
               <DialogDescription>
                 Mettez à jour les informations ci-dessous.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name-edit" className="text-right">
-                  Nom
-                </Label>
-                <Input
-                  id="name-edit"
-                  name="name-edit"
-                  defaultValue={editingCandidate?.name}
-                  className="col-span-3"
-                  required
-                />
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">Intitulé du Poste</Label>
+                <Input id="edit-title" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} required />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="position-edit" className="text-right">
-                  Poste
-                </Label>
-                <Input
-                  id="position-edit"
-                  name="position-edit"
-                  defaultValue={editingCandidate?.position}
-                  className="col-span-3"
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status-edit" className="text-right">
-                  Statut
-                </Label>
-                <Select
-                  name="status"
-                  value={newStatus}
-                  onValueChange={(value: Candidate['status']) =>
-                    setNewStatus(value)
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Sélectionner un statut" />
-                  </SelectTrigger>
+              <div className="space-y-2">
+                <Label htmlFor="edit-type">Type de Poste</Label>
+                <Select value={editType} onValueChange={(v: 'Remplacement' | 'Création') => setEditType(v)} required>
+                  <SelectTrigger id="edit-type"><SelectValue placeholder="Sélectionner le type" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Nouveau">Nouveau</SelectItem>
-                    <SelectItem value="Entretien">Entretien</SelectItem>
-                    <SelectItem value="Offre envoyée">Offre envoyée</SelectItem>
-                    <SelectItem value="Rejeté">Rejeté</SelectItem>
+                    <SelectItem value="Création">Création de poste</SelectItem>
+                    <SelectItem value="Remplacement">Poste à remplacer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description du poste et tâches</Label>
+                  <Textarea id="edit-description" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-opening-date">Date de l'ouverture</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !editOpeningDate && 'text-muted-foreground')}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editOpeningDate ? format(editOpeningDate, 'dd/MM/yyyy') : <span>Choisir une date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={editOpeningDate} onSelect={setEditOpeningDate} initialFocus /></PopoverContent>
+                  </Popover>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-status">Statut</Label>
+                  <Select value={editStatus} onValueChange={(v: 'Ouvert' | 'Pourvu' | 'Annulé') => setEditStatus(v)} required>
+                    <SelectTrigger id="edit-status"><SelectValue placeholder="Sélectionner un statut" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Ouvert">Ouvert</SelectItem>
+                      <SelectItem value="Pourvu">Pourvu</SelectItem>
+                      <SelectItem value="Annulé">Annulé</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              {editStatus === 'Pourvu' && (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-filled-date">Date à pourvu</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant={'outline'} className={cn('w-full justify-start text-left font-normal', !editFilledDate && 'text-muted-foreground')}>
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editFilledDate ? format(editFilledDate, 'dd/MM/yyyy') : <span>Choisir une date</span>}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={editFilledDate} onSelect={setEditFilledDate} initialFocus /></PopoverContent>
+                  </Popover>
+                </div>
+              )}
             </div>
             <DialogFooter>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setEditingCandidate(null)}
-              >
-                Annuler
-              </Button>
+              <Button type="button" variant="secondary" onClick={() => setEditingPosition(null)}>Annuler</Button>
               <Button type="submit">Sauvegarder</Button>
             </DialogFooter>
           </form>
