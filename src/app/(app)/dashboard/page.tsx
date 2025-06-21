@@ -247,12 +247,7 @@ export default function DashboardPage() {
     });
 
     for (const employee of activeEmployees) {
-        // Determine the start date of the current assignment
-        const lastChangeDate = lastChangeDateMap.get(employee.matricule);
-        const hireDate = parseFlexibleDate(employee.dateEmbauche);
-        
-        // The assignment starts from the last move, or from the hire date if there are no moves.
-        const assignmentStartDate = lastChangeDate || hireDate;
+        const assignmentStartDate = lastChangeDateMap.get(employee.matricule);
 
         if (assignmentStartDate) {
             const durationInMonths = differenceInMonths(today, assignmentStartDate);
