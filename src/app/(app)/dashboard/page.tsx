@@ -17,6 +17,7 @@ import {
   UserPlus,
   Users,
   Percent,
+  AlertTriangle,
 } from 'lucide-react';
 import { useStore, store } from '@/lib/store';
 import {
@@ -28,6 +29,7 @@ import {
   type ChartConfig,
 } from '@/components/ui/chart';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
+import { addMonths, differenceInDays, format } from 'date-fns';
 
 /**
  * Parses a date string from various common formats.
@@ -201,6 +203,30 @@ export default function DashboardPage() {
 
     return data.slice(0, today.getMonth() + 1);
   }, [store.employees, currentYear]);
+  
+  const employeesEndingTrial = React.useMemo(() => {
+    const today = new Date();
+    return store.employees
+      .filter((employee) => employee.status === 'Actif' && employee.periodeEssai > 0)
+      .map((employee) => {
+        const hireDate = parseFlexibleDate(employee.dateEmbauche);
+        if (!hireDate) return null;
+
+        const trialEndDate = addMonths(hireDate, employee.periodeEssai);
+        const daysRemaining = differenceInDays(trialEndDate, today);
+
+        if (daysRemaining >= 0 && daysRemaining <= 15) {
+          return {
+            ...employee,
+            trialEndDate,
+            daysRemaining,
+          };
+        }
+        return null;
+      })
+      .filter((e): e is NonNullable<typeof e> => e !== null)
+      .sort((a, b) => a.daysRemaining - b.daysRemaining);
+  }, [store.employees]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -267,6 +293,39 @@ export default function DashboardPage() {
         </Card>
       </div>
 
+      <div className="grid grid-cols-1 gap-6">
+        <Card className="border-l-4 border-primary">
+          <CardHeader className="flex flex-row items-center gap-3 space-y-0">
+            <AlertTriangle className="h-5 w-5 text-primary" />
+            <CardTitle>
+              Alertes de Fin de Période d'Essai
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {employeesEndingTrial.length > 0 ? (
+              <div className="space-y-4">
+                {employeesEndingTrial.map((employee) => (
+                  <div key={employee.matricule} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
+                    <div>
+                      <p className="font-semibold">{employee.noms}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Se termine le {format(employee.trialEndDate, 'dd/MM/yyyy')}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                        <span className="font-bold text-lg text-primary">{employee.daysRemaining}</span>
+                        <span className="text-sm text-muted-foreground ml-1">{employee.daysRemaining > 1 ? 'jours' : 'jour'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">Aucune période d'essai ne se termine dans les 15 prochains jours.</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+      
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
