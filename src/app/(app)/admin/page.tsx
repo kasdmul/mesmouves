@@ -71,13 +71,26 @@ export default function AdminPage() {
   const [newUserPassword, setNewUserPassword] = React.useState('');
 
   // Edit User State
-  const [editingRole, setEditingRole] = React.useState<string | undefined>();
+  const [editForm, setEditForm] = React.useState({ name: '', role: '' as User['role'], password: '' });
 
   React.useEffect(() => {
     if (editingUser) {
-      setEditingRole(editingUser.role);
+      setEditForm({
+          name: editingUser.name,
+          role: editingUser.role,
+          password: '', // Don't pre-fill password
+      });
     }
   }, [editingUser]);
+
+  const handleEditFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setEditForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditRoleChange = (value: User['role']) => {
+    setEditForm(prev => ({ ...prev, role: value }));
+  }
   
   const resetAddUserForm = () => {
     setNewUserName('');
@@ -131,19 +144,22 @@ export default function AdminPage() {
     notify();
   };
 
-  const handleUpdateUserRole = (event: React.FormEvent) => {
+  const handleUpdateUser = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingUser || !editingRole) return;
+    if (!editingUser) return;
 
     // Admin cannot change superadmin or other admin roles
+    // This is already gated in the UI, but it's good practice to have it here
     if (currentUser?.role === 'admin' && (editingUser.role === 'superadmin' || editingUser.role === 'admin')) {
-      alert("Vous n'avez pas la permission de modifier ce rôle.");
+      alert("Vous n'avez pas la permission de modifier cet utilisateur.");
       return;
     }
 
     const updatedUser: User = {
       ...editingUser,
-      role: editingRole as User['role'],
+      name: editForm.name,
+      role: editForm.role,
+      password: editForm.password ? editForm.password : editingUser.password,
     };
 
     store.users = store.users.map((u) =>
@@ -344,7 +360,7 @@ export default function AdminPage() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Actions</DropdownMenuLabel>
                               <DropdownMenuItem onClick={() => setEditingUser(user)}>
-                                Modifier le rôle
+                                Modifier
                               </DropdownMenuItem>
                               <AlertDialog>
                                 <AlertDialogTrigger asChild>
@@ -391,33 +407,37 @@ export default function AdminPage() {
         open={!!editingUser}
         onOpenChange={(isOpen) => !isOpen && setEditingUser(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
-          <form onSubmit={handleUpdateUserRole}>
+        <DialogContent className="sm:max-w-md">
+          <form onSubmit={handleUpdateUser}>
             <DialogHeader>
-              <DialogTitle>Modifier le rôle de l'utilisateur</DialogTitle>
+              <DialogTitle>Modifier l'Utilisateur</DialogTitle>
               <DialogDescription>
-                Sélectionnez un nouveau rôle pour {editingUser?.name}.
+                Mettez à jour les informations pour {editingUser?.name}.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="role-edit" className="text-right">
-                  Rôle
-                </Label>
-                <Select
-                  name="role"
-                  value={editingRole}
-                  onValueChange={(value: string) => setEditingRole(value)}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Sélectionner un rôle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currentUser?.role === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
-                    {currentUser?.role === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
-                    <SelectItem value="membre">Membre</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                  <Label htmlFor="edit-email">Email (non modifiable)</Label>
+                  <Input id="edit-email" value={editingUser?.email || ''} readOnly disabled />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="edit-name">Nom Utilisateur</Label>
+                  <Input id="edit-name" name="name" value={editForm.name} onChange={handleEditFormChange} required />
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="edit-role">Rôle</Label>
+                  <Select value={editForm.role} onValueChange={handleEditRoleChange} required>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner un rôle" /></SelectTrigger>
+                      <SelectContent>
+                          {currentUser?.role === 'superadmin' && <SelectItem value="superadmin">Super Admin</SelectItem>}
+                          {currentUser?.role === 'superadmin' && <SelectItem value="admin">Admin</SelectItem>}
+                          <SelectItem value="membre">Membre</SelectItem>
+                      </SelectContent>
+                  </Select>
+              </div>
+              <div className="space-y-2">
+                  <Label htmlFor="edit-password">Nouveau Mot de passe</Label>
+                  <Input id="edit-password" name="password" type="password" value={editForm.password} onChange={handleEditFormChange} placeholder="Laisser vide pour ne pas changer" />
               </div>
             </div>
             <DialogFooter>
