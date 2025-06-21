@@ -71,12 +71,13 @@ export default function AdminPage() {
   const [newUserPassword, setNewUserPassword] = React.useState('');
 
   // Edit User State
-  const [editForm, setEditForm] = React.useState({ name: '', role: '' as User['role'], password: '' });
+  const [editForm, setEditForm] = React.useState({ name: '', email: '', role: '' as User['role'], password: '' });
 
   React.useEffect(() => {
     if (editingUser) {
       setEditForm({
           name: editingUser.name,
+          email: editingUser.email,
           role: editingUser.role,
           password: '', // Don't pre-fill password
       });
@@ -149,15 +150,21 @@ export default function AdminPage() {
     if (!editingUser) return;
 
     // Admin cannot change superadmin or other admin roles
-    // This is already gated in the UI, but it's good practice to have it here
     if (currentUser?.role === 'admin' && (editingUser.role === 'superadmin' || editingUser.role === 'admin')) {
       alert("Vous n'avez pas la permission de modifier cet utilisateur.");
       return;
     }
 
+    // Check for duplicate email
+    if (editForm.email !== editingUser.email && store.users.some(user => user.email === editForm.email)) {
+        alert("Cette adresse e-mail est déjà utilisée par un autre compte.");
+        return;
+    }
+
     const updatedUser: User = {
       ...editingUser,
       name: editForm.name,
+      email: editForm.email,
       role: editForm.role,
       password: editForm.password ? editForm.password : editingUser.password,
     };
@@ -165,6 +172,12 @@ export default function AdminPage() {
     store.users = store.users.map((u) =>
       u.email === editingUser.email ? updatedUser : u
     );
+
+    // If the currently logged-in user is the one being edited, update currentUser as well
+    if (currentUser && currentUser.email === editingUser.email) {
+        store.currentUser = updatedUser;
+    }
+    
     notify();
     setEditingUser(null);
   };
@@ -417,8 +430,8 @@ export default function AdminPage() {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="space-y-2">
-                  <Label htmlFor="edit-email">Email (non modifiable)</Label>
-                  <Input id="edit-email" value={editingUser?.email || ''} readOnly disabled />
+                  <Label htmlFor="edit-email">Email</Label>
+                  <Input id="edit-email" name="email" type="email" value={editForm.email} onChange={handleEditFormChange} required />
               </div>
               <div className="space-y-2">
                   <Label htmlFor="edit-name">Nom Utilisateur</Label>

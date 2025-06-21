@@ -101,9 +101,7 @@ export type WorkLocationChange = {
 // --- Data Store ---
 // This acts as our in-memory database.
 const initialUsers: User[] = [
-  { name: 'Super Admin', email: 'super@rh.com', role: 'superadmin', password: 'password' },
-  { name: 'Admin User', email: 'admin@rh.com', role: 'admin', password: 'password' },
-  { name: 'Member User', email: 'member@rh.com', role: 'membre', password: 'password' },
+  { name: 'Super Admin', email: 'superadmin@rh-insights.com', role: 'superadmin', password: 'password' },
 ];
 
 export const store = {
