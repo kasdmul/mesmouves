@@ -13,7 +13,7 @@ import { useStore, store } from '@/lib/store';
 export default function DashboardPage() {
   useStore(); // Subscribe to store changes
 
-  const totalEmployees = store.employees.length;
+  const totalEmployees = store.employees.filter(e => e.status === 'Actif').length;
 
   const newHiresThisMonth = React.useMemo(() => {
     const today = new Date();
@@ -33,23 +33,23 @@ export default function DashboardPage() {
     }).length;
   }, [store.employees]);
 
-  // As there is no employee departure tracking, we use rejected candidates this month as a proxy.
   const departuresThisMonth = React.useMemo(() => {
     const today = new Date();
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
     
-    return store.candidates.filter(candidate => {
-      if (candidate.status !== 'Rejeté' || !candidate.appliedDate) return false;
+    return store.employees.filter(employee => {
+      if (employee.status !== 'Parti' || !employee.dateDepart) return false;
       try {
-        // 'yyyy-MM-dd' format is directly parseable by new Date()
-        const appliedDate = new Date(candidate.appliedDate);
-        return !isNaN(appliedDate.getTime()) && appliedDate.getMonth() === currentMonth && appliedDate.getFullYear() === currentYear;
+        const parts = employee.dateDepart.split('/');
+        const departureDate = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        return !isNaN(departureDate.getTime()) && departureDate.getMonth() === currentMonth && departureDate.getFullYear() === currentYear;
       } catch (e) {
         return false;
       }
     }).length;
-  }, [store.candidates]);
+  }, [store.employees]);
+
 
   const openPositions = React.useMemo(() => {
     return store.candidates.filter(
@@ -58,8 +58,8 @@ export default function DashboardPage() {
   }, [store.candidates]);
   
   const totalDepartments = React.useMemo(() => {
-    // Count unique, valid department names
-    const departments = new Set(store.employees.map(e => e.departement).filter(d => d && d.trim() && d.trim() !== 'N/A'));
+    // Count unique, valid department names from active employees
+    const departments = new Set(store.employees.filter(e => e.status === 'Actif').map(e => e.departement).filter(d => d && d.trim() && d.trim() !== 'N/A'));
     return departments.size;
   }, [store.employees]);
 
@@ -68,7 +68,7 @@ export default function DashboardPage() {
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Employés</CardTitle>
+          <CardTitle className="text-sm font-medium">Total Employés Actifs</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -93,7 +93,7 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">-{departuresThisMonth}</div>
-          <p className="text-xs text-muted-foreground">Candidats rejetés ce mois-ci</p>
+          <p className="text-xs text-muted-foreground">Ce mois-ci</p>
         </CardContent>
       </Card>
       <Card>

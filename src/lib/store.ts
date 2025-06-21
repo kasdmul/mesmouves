@@ -14,6 +14,8 @@ export type Employee = {
   typeContrat: string;
   dateEmbauche: string;
   periodeEssai: number;
+  status: 'Actif' | 'Parti';
+  dateDepart?: string;
 };
 
 export type Candidate = {

@@ -65,6 +65,14 @@ import {
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export default function PersonnelPage() {
   useStore();
@@ -88,26 +96,37 @@ export default function PersonnelPage() {
   const [editingHireDate, setEditingHireDate] = React.useState<
     Date | undefined
   >();
+  const [editingDepartureDate, setEditingDepartureDate] = React.useState<
+    Date | undefined
+  >();
+  const [editingStatus, setEditingStatus] = React.useState<
+    Employee['status'] | undefined
+  >();
+
+  const parseDate = (dateString?: string): Date | undefined => {
+    if (!dateString) return undefined;
+    try {
+      const parts = dateString.split('/');
+      const date = new Date(
+        parseInt(parts[2], 10),
+        parseInt(parts[1], 10) - 1,
+        parseInt(parts[0], 10)
+      );
+      return isNaN(date.getTime()) ? undefined : date;
+    } catch (e) {
+      return undefined;
+    }
+  };
 
   React.useEffect(() => {
-    if (editingEmployee && editingEmployee.dateEmbauche) {
-      try {
-        const parts = editingEmployee.dateEmbauche.split('/');
-        const date = new Date(
-          parseInt(parts[2], 10),
-          parseInt(parts[1], 10) - 1,
-          parseInt(parts[0], 10)
-        );
-        if (!isNaN(date.getTime())) {
-          setEditingHireDate(date);
-        } else {
-          setEditingHireDate(undefined);
-        }
-      } catch (e) {
-        setEditingHireDate(undefined);
-      }
+    if (editingEmployee) {
+      setEditingHireDate(parseDate(editingEmployee.dateEmbauche));
+      setEditingDepartureDate(parseDate(editingEmployee.dateDepart));
+      setEditingStatus(editingEmployee.status);
     } else {
       setEditingHireDate(undefined);
+      setEditingDepartureDate(undefined);
+      setEditingStatus(undefined);
     }
   }, [editingEmployee]);
 
@@ -145,7 +164,16 @@ export default function PersonnelPage() {
               row['Date de Début'] ||
               row["Date d'embauche"] ||
               format(new Date(), 'dd/MM/yyyy'),
-            periodeEssai: parseInt(row["Période d'essai (mois)"] || row["Période d'essai (jours)"] || row["Période d'essai"] || '0', 10) || 0,
+            periodeEssai:
+              parseInt(
+                row["Période d'essai (mois)"] ||
+                  row["Période d'essai (jours)"] ||
+                  row["Période d'essai"] ||
+                  '0',
+                10
+              ) || 0,
+            status: row.Statut === 'Parti' ? 'Parti' : 'Actif',
+            dateDepart: row['Date de départ'],
           };
         })
         .filter((e): e is Employee => e !== null);
@@ -192,6 +220,7 @@ export default function PersonnelPage() {
       typeContrat: 'N/A',
       dateEmbauche: hireDate ? format(hireDate, 'dd/MM/yyyy') : '',
       periodeEssai: parseInt(periodeEssaiInputRef.current?.value || '0', 10),
+      status: 'Actif',
     };
     if (newEmployee.noms && newEmployee.email && newEmployee.matricule) {
       store.employees.push(newEmployee);
@@ -211,7 +240,7 @@ export default function PersonnelPage() {
 
   const handleUpdateEmployee = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingEmployee) return;
+    if (!editingEmployee || !editingStatus) return;
 
     const form = event.target as HTMLFormElement;
     const formData = new FormData(form);
@@ -225,7 +254,15 @@ export default function PersonnelPage() {
       dateEmbauche: editingHireDate
         ? format(editingHireDate, 'dd/MM/yyyy')
         : editingEmployee.dateEmbauche,
-      periodeEssai: parseInt(formData.get('periodeEssai-edit') as string || '0', 10),
+      periodeEssai: parseInt(
+        (formData.get('periodeEssai-edit') as string) || '0',
+        10
+      ),
+      status: editingStatus,
+      dateDepart:
+        editingStatus === 'Parti' && editingDepartureDate
+          ? format(editingDepartureDate, 'dd/MM/yyyy')
+          : undefined,
     };
 
     store.employees = store.employees.map((e) =>
@@ -248,12 +285,24 @@ export default function PersonnelPage() {
     notify();
   };
 
+  const getStatusBadgeVariant = (status: Employee['status']) => {
+    switch (status) {
+      case 'Actif':
+        return 'secondary';
+      case 'Parti':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
+
   const filteredEmployees = store.employees.filter(
     (employee) =>
       employee.noms.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.departement.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      employee.poste.toLowerCase().includes(searchTerm.toLowerCase())
+      employee.poste.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.status.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -447,11 +496,9 @@ export default function PersonnelPage() {
                     Département
                   </TableHead>
                   <TableHead>Poste</TableHead>
+                  <TableHead>Statut</TableHead>
                   <TableHead className="hidden lg:table-cell">
                     Date de Début
-                  </TableHead>
-                  <TableHead className="hidden lg:table-cell">
-                    Période d'essai (mois)
                   </TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
@@ -485,11 +532,15 @@ export default function PersonnelPage() {
                       {employee.departement}
                     </TableCell>
                     <TableCell>{employee.poste}</TableCell>
-                    <TableCell className="hidden lg:table-cell">
-                      {employee.dateEmbauche}
+                    <TableCell>
+                      <Badge
+                        variant={getStatusBadgeVariant(employee.status) as any}
+                      >
+                        {employee.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="hidden lg:table-cell">
-                      {employee.periodeEssai}
+                      {employee.dateEmbauche}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
@@ -627,6 +678,26 @@ export default function PersonnelPage() {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status-edit" className="text-right">
+                  Statut
+                </Label>
+                <Select
+                  name="status-edit"
+                  value={editingStatus}
+                  onValueChange={(value: Employee['status']) =>
+                    setEditingStatus(value)
+                  }
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Sélectionner un statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Actif">Actif</SelectItem>
+                    <SelectItem value="Parti">Parti</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="hire-date-edit" className="text-right">
                   Date d'embauche
                 </Label>
@@ -657,6 +728,39 @@ export default function PersonnelPage() {
                   </PopoverContent>
                 </Popover>
               </div>
+              {editingStatus === 'Parti' && (
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="departure-date-edit" className="text-right">
+                    Date de départ
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant={'outline'}
+                        className={cn(
+                          'col-span-3 justify-start text-left font-normal',
+                          !editingDepartureDate && 'text-muted-foreground'
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {editingDepartureDate ? (
+                          format(editingDepartureDate, 'dd/MM/yyyy')
+                        ) : (
+                          <span>Choisir une date</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={editingDepartureDate}
+                        onSelect={setEditingDepartureDate}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="periodeEssai-edit" className="text-right">
                   Période d'essai (mois)
