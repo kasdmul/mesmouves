@@ -8,6 +8,7 @@ export type Employee = {
   matricule: string;
   noms: string;
   email: string;
+  entite: string;
   departement: string;
   poste: string;
   salaire: number;
@@ -26,6 +27,7 @@ export type OpenPosition = {
   filledDate?: string;
   description: string;
   status: 'Ouvert' | 'Pourvu' | 'Annulé';
+  cost?: number;
 };
 
 export type User = {

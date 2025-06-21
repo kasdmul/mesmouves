@@ -71,6 +71,7 @@ export default function RecruitmentPage() {
   // --- Add Form State ---
   const addTitleRef = React.useRef<HTMLInputElement>(null);
   const addDescriptionRef = React.useRef<HTMLTextAreaElement>(null);
+  const addCostRef = React.useRef<HTMLInputElement>(null);
   const [addType, setAddType] = React.useState<'Remplacement' | 'Création'>();
   const [addOpeningDate, setAddOpeningDate] = React.useState<Date>();
 
@@ -81,10 +82,12 @@ export default function RecruitmentPage() {
   const [editFilledDate, setEditFilledDate] = React.useState<Date | undefined>();
   const [editDescription, setEditDescription] = React.useState('');
   const [editStatus, setEditStatus] = React.useState<'Ouvert' | 'Pourvu' | 'Annulé'>();
+  const [editCost, setEditCost] = React.useState<number | undefined>();
 
   const resetAddForm = () => {
     if (addTitleRef.current) addTitleRef.current.value = '';
     if (addDescriptionRef.current) addDescriptionRef.current.value = '';
+    if (addCostRef.current) addCostRef.current.value = '';
     setAddType(undefined);
     setAddOpeningDate(undefined);
     setIsAddDialogOpen(false);
@@ -103,6 +106,7 @@ export default function RecruitmentPage() {
       }
       setEditDescription(editingPosition.description);
       setEditStatus(editingPosition.status);
+      setEditCost(editingPosition.cost);
     }
   }, [editingPosition]);
 
@@ -110,6 +114,7 @@ export default function RecruitmentPage() {
     event.preventDefault();
     const title = addTitleRef.current?.value;
     const description = addDescriptionRef.current?.value;
+    const cost = addCostRef.current?.value;
 
     if (!title || !addType || !addOpeningDate || !description) {
       alert('Veuillez remplir tous les champs obligatoires.');
@@ -123,6 +128,7 @@ export default function RecruitmentPage() {
       openingDate: format(addOpeningDate, 'dd/MM/yyyy'),
       description,
       status: 'Ouvert',
+      cost: cost ? parseFloat(cost) : undefined,
     };
 
     store.openPositions.unshift(newPosition);
@@ -145,6 +151,7 @@ export default function RecruitmentPage() {
       filledDate: editFilledDate && editStatus === 'Pourvu' ? format(editFilledDate, 'dd/MM/yyyy') : undefined,
       description: editDescription,
       status: editStatus,
+      cost: editCost,
     };
 
     store.openPositions = store.openPositions.map((p) =>
@@ -229,6 +236,10 @@ export default function RecruitmentPage() {
                         <Label htmlFor="add-description">Description du poste et tâches</Label>
                         <Textarea id="add-description" ref={addDescriptionRef} placeholder="Décrire les responsabilités et tâches..." required />
                       </div>
+                       <div className="space-y-2">
+                        <Label htmlFor="add-cost">Coût de Recrutement ($US)</Label>
+                        <Input id="add-cost" type="number" ref={addCostRef} placeholder="p. ex. 1500" />
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="add-opening-date">Date de l'ouverture</Label>
                         <Popover>
@@ -291,9 +302,10 @@ export default function RecruitmentPage() {
                 <TableRow>
                   <TableHead>Intitulé du Poste</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Statut</TableHead>
                   <TableHead>Date d'ouverture</TableHead>
                   <TableHead>Date pourvu</TableHead>
+                  <TableHead>Coût ($US)</TableHead>
+                  <TableHead>Statut</TableHead>
                   <TableHead><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
@@ -302,9 +314,10 @@ export default function RecruitmentPage() {
                   <TableRow key={position.id}>
                     <TableCell className="font-medium">{position.title}</TableCell>
                     <TableCell>{position.type}</TableCell>
-                    <TableCell><Badge variant={getBadgeVariant(position.status) as any}>{position.status}</Badge></TableCell>
                     <TableCell>{position.openingDate}</TableCell>
                     <TableCell>{position.filledDate || 'N/A'}</TableCell>
+                    <TableCell>{position.cost ? position.cost.toLocaleString('fr-FR') : 'N/A'}</TableCell>
+                    <TableCell><Badge variant={getBadgeVariant(position.status) as any}>{position.status}</Badge></TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button aria-haspopup="true" size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /><span className="sr-only">Toggle menu</span></Button></DropdownMenuTrigger>
@@ -365,6 +378,10 @@ export default function RecruitmentPage() {
               <div className="space-y-2">
                   <Label htmlFor="edit-description">Description du poste et tâches</Label>
                   <Textarea id="edit-description" value={editDescription} onChange={(e) => setEditDescription(e.target.value)} required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-cost">Coût de Recrutement ($US)</Label>
+                <Input id="edit-cost" type="number" value={editCost ?? ''} onChange={(e) => setEditCost(e.target.value ? parseFloat(e.target.value) : undefined)} placeholder="p. ex. 1500" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

@@ -87,6 +87,7 @@ export default function PersonnelPage() {
   const matriculeInputRef = React.useRef<HTMLInputElement>(null);
   const nomsInputRef = React.useRef<HTMLInputElement>(null);
   const emailInputRef = React.useRef<HTMLInputElement>(null);
+  const entiteInputRef = React.useRef<HTMLInputElement>(null);
   const departementInputRef = React.useRef<HTMLInputElement>(null);
   const posteInputRef = React.useRef<HTMLInputElement>(null);
   const periodeEssaiInputRef = React.useRef<HTMLInputElement>(null);
@@ -156,6 +157,7 @@ export default function PersonnelPage() {
             email:
               row.Email ||
               `${row.Noms.toLowerCase().replace(/\s/g, '.')}@example.com`,
+            entite: row.Entité || 'N/A',
             departement: row.Département || 'N/A',
             poste: row.Poste,
             salaire: parseFloat(row['Salaire de Base']) || 0,
@@ -214,6 +216,7 @@ export default function PersonnelPage() {
         `E${Math.floor(Math.random() * 1000)}`,
       noms: nomsInputRef.current?.value || '',
       email: emailInputRef.current?.value || '',
+      entite: entiteInputRef.current?.value || 'N/A',
       departement: departementInputRef.current?.value || '',
       poste: posteInputRef.current?.value || '',
       salaire: 0,
@@ -230,6 +233,7 @@ export default function PersonnelPage() {
       if (matriculeInputRef.current) matriculeInputRef.current.value = '';
       if (nomsInputRef.current) nomsInputRef.current.value = '';
       if (emailInputRef.current) emailInputRef.current.value = '';
+      if (entiteInputRef.current) entiteInputRef.current.value = '';
       if (departementInputRef.current) departementInputRef.current.value = '';
       if (posteInputRef.current) posteInputRef.current.value = '';
       if (periodeEssaiInputRef.current)
@@ -254,6 +258,7 @@ export default function PersonnelPage() {
       ...editingEmployee,
       noms: formData.get('noms-edit') as string,
       email: formData.get('email-edit') as string,
+      entite: formData.get('entite-edit') as string,
       departement: formData.get('departement-edit') as string,
       poste: formData.get('poste-edit') as string,
       dateEmbauche: editingHireDate
@@ -305,6 +310,7 @@ export default function PersonnelPage() {
     (employee) =>
       employee.noms.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      employee.entite.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.departement.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.poste.toLowerCase().includes(searchTerm.toLowerCase()) ||
       employee.status.toLowerCase().includes(searchTerm.toLowerCase())
@@ -329,7 +335,7 @@ export default function PersonnelPage() {
                     Ajouter un employé
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-md">
                   <form onSubmit={handleAddEmployee}>
                     <DialogHeader>
                       <DialogTitle>Ajouter un nouvel employé</DialogTitle>
@@ -374,6 +380,17 @@ export default function PersonnelPage() {
                           placeholder="p. ex. alice.b@example.com"
                           className="col-span-3"
                           required
+                        />
+                      </div>
+                       <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="entity" className="text-right">
+                          Entité
+                        </Label>
+                        <Input
+                          id="entity"
+                          ref={entiteInputRef}
+                          placeholder="p. ex. Siège Social"
+                          className="col-span-3"
                         />
                       </div>
                       <div className="grid grid-cols-4 items-center gap-4">
@@ -497,6 +514,7 @@ export default function PersonnelPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Employé</TableHead>
+                  <TableHead className="hidden md:table-cell">Entité</TableHead>
                   <TableHead className="hidden md:table-cell">
                     Département
                   </TableHead>
@@ -533,6 +551,7 @@ export default function PersonnelPage() {
                         </div>
                       </div>
                     </TableCell>
+                    <TableCell className="hidden md:table-cell">{employee.entite}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       {employee.departement}
                     </TableCell>
@@ -612,7 +631,7 @@ export default function PersonnelPage() {
         open={!!editingEmployee}
         onOpenChange={(isOpen) => !isOpen && setEditingEmployee(null)}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-md">
           <form onSubmit={handleUpdateEmployee}>
             <DialogHeader>
               <DialogTitle>Modifier l'employé</DialogTitle>
@@ -658,6 +677,17 @@ export default function PersonnelPage() {
                   defaultValue={editingEmployee?.email}
                   className="col-span-3"
                   required
+                />
+              </div>
+               <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="entite-edit" className="text-right">
+                  Entité
+                </Label>
+                <Input
+                  id="entite-edit"
+                  name="entite-edit"
+                  defaultValue={editingEmployee?.entite}
+                  className="col-span-3"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
