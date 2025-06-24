@@ -12,23 +12,19 @@ import {
   Users,
   ArrowRightLeft,
   PieChart,
+  PanelLeft,
 } from 'lucide-react';
+import React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarFooter,
-} from '@/components/ui/sidebar';
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 import { useStore, notify } from '@/lib/store';
-import React from 'react';
+import { cn } from '@/lib/utils';
 
 const navItems = [
   { href: '/dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
@@ -50,6 +46,53 @@ const pageTitles: { [key: string]: string } = {
   '/admin': 'Panneau Admin',
 };
 
+function NavContent({ currentUser, onLogout }: { currentUser: any, onLogout: () => void }) {
+  const pathname = usePathname();
+
+  const accessibleNavItems = navItems.filter(item => {
+    if (!item.roles) return true;
+    if (!currentUser) return false;
+    return item.roles.includes(currentUser.role);
+  });
+
+  return (
+    <>
+      <div className="flex h-full max-h-screen flex-col gap-2">
+        <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
+          <Link href="/" className="flex items-center gap-2 font-semibold">
+            <Briefcase className="h-6 w-6" />
+            <span>Gestion Carrière</span>
+          </Link>
+        </div>
+        <div className="flex-1">
+          <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
+            {accessibleNavItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                  pathname.startsWith(item.href) && "bg-muted text-primary"
+                )}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+        <div className="mt-auto p-4 border-t">
+            <Button variant="outline" className="w-full" onClick={onLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Déconnexion
+            </Button>
+        </div>
+      </div>
+    </>
+  );
+}
+
+
 export default function AppLayout({
   children,
 }: {
@@ -60,9 +103,9 @@ export default function AppLayout({
   const { store, isLoaded } = useStore();
   const { currentUser } = store;
   const pageTitle = pageTitles[pathname] || 'Tableau de Bord';
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
 
   React.useEffect(() => {
-    // If there's no current user when data is loaded, redirect to login page.
     if (isLoaded && !currentUser) {
       router.push('/login');
     }
@@ -71,16 +114,13 @@ export default function AppLayout({
   const handleLogout = () => {
     store.currentUser = null;
     notify();
-    // The useEffect above will handle the redirect.
   };
+  
+  React.useEffect(() => {
+    // Close sheet on navigation
+    setIsSheetOpen(false);
+  }, [pathname]);
 
-  const accessibleNavItems = navItems.filter(item => {
-    if (!item.roles) return true; // public item
-    if (!currentUser) return false; // if no user, hide role-based item
-    return item.roles.includes(currentUser.role);
-  });
-
-  // Show a loading screen until data is loaded from the database
   if (!isLoaded) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
@@ -95,55 +135,38 @@ export default function AppLayout({
     );
   }
   
-  // Don't render anything until the redirection check has happened
   if (!currentUser) {
     return null;
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="border-b">
-          <h1 className="text-2xl font-semibold tracking-tight">Gestion de Carrière</h1>
-        </SidebarHeader>
-        <SidebarContent className="p-2">
-          <SidebarMenu>
-            {accessibleNavItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith(item.href)}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span>{item.label}</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarFooter className="p-2 border-t">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton variant="outline" onClick={handleLogout}>
-                <LogOut />
-                <span>Déconnexion</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset>
-        <header className="flex h-16 items-center justify-between border-b bg-card px-6">
-          <div className="flex items-center gap-4">
-            <SidebarTrigger />
-            <h2 className="text-xl font-semibold" id="currentTabTitle">
-              {pageTitle}
-            </h2>
+    <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
+      <div className="hidden border-r bg-muted/40 md:block">
+        <NavContent currentUser={currentUser} onLogout={handleLogout} />
+      </div>
+      <div className="flex flex-col">
+        <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 lg:h-[60px] lg:px-6">
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <PanelLeft className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="flex flex-col p-0">
+              <NavContent currentUser={currentUser} onLogout={handleLogout} />
+            </SheetContent>
+          </Sheet>
+          
+          <div className="w-full flex-1">
+             <h1 className="text-xl font-semibold">{pageTitle}</h1>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2">
               <Avatar className="h-8 w-8">
                 <AvatarImage
                   src="https://placehold.co/40x40.png"
@@ -152,17 +175,15 @@ export default function AppLayout({
                 />
                 <AvatarFallback>{currentUser?.name.charAt(0) ?? 'U'}</AvatarFallback>
               </Avatar>
-              <span
-                id="userDisplayName"
-                className="text-sm font-medium hidden md:block"
-              >
+              <span className="text-sm font-medium hidden md:block">
                 {currentUser?.name ?? 'Utilisateur'}
               </span>
             </div>
-          </div>
         </header>
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 overflow-auto">
+          {children}
+        </main>
+      </div>
+    </div>
   );
 }
