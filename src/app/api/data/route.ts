@@ -1,6 +1,5 @@
 
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
 import path from 'path';
 import fs from 'fs/promises';
 
@@ -20,7 +19,7 @@ const initialData = {
     workLocations: [],
 };
 
-// Function to read from db.json as a fallback
+// Function to read from db.json
 async function readDbJson() {
   try {
     const jsonPath = path.join(process.cwd(), 'db.json');
@@ -36,27 +35,7 @@ async function readDbJson() {
 }
 
 async function getData() {
-  // If Firestore is configured and working, use it.
-  if (db) {
-    const docRef = db.collection('appState').doc('data');
-    try {
-      const doc = await doc.get();
-      if (!doc.exists) {
-        // If the doc doesn't exist in Firestore, try to seed it from db.json
-        console.log("No data in Firestore, seeding from db.json...");
-        const seedData = await readDbJson();
-        await docRef.set(seedData);
-        return seedData;
-      }
-      return { ...initialData, ...doc.data() };
-    } catch (error) {
-      console.error('Firestore GET error, falling back to db.json:', error);
-      return readDbJson();
-    }
-  }
-
-  // If Firestore is not initialized, use db.json
-  console.warn("Firestore is not initialized. Serving data from db.json.");
+  // For debugging, we are only using db.json
   return readDbJson();
 }
 
@@ -68,18 +47,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const data = await request.json();
 
-  // If Firestore is configured and working, use it.
-  if (db) {
-    const docRef = db.collection('appState').doc('data');
-    try {
-      await docRef.set(data);
-      return NextResponse.json({ message: 'Data saved to Firestore successfully.' });
-    } catch (error) {
-      console.error('Failed to save data to Firestore, falling back to writing db.json:', error);
-    }
-  }
-
-  // If Firestore is not available, write to db.json
+  // For debugging, we only write to db.json
   try {
     const jsonPath = path.join(process.cwd(), 'db.json');
     await fs.writeFile(jsonPath, JSON.stringify(data, null, 2), 'utf-8');
