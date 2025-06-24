@@ -147,6 +147,8 @@ async function loadData() {
     if (!response.ok) throw new Error('Failed to fetch data');
     const dataFromServer = await response.json();
     store = dataFromServer;
+    // Always reset the current user on initial load to force login
+    store.currentUser = null;
     dataIsLoaded = true;
   } catch (error) {
     console.error("Couldn't load data from server, using initial data.", error);
@@ -162,13 +164,14 @@ async function loadData() {
 
 async function saveData() {
   try {
-    // We make a safe copy of the store to avoid any circular reference issues
-    // although with this simple structure, it's not expected.
-    const dataToSave = JSON.parse(JSON.stringify(store));
+    // Create a copy of the store but explicitly set currentUser to null before saving.
+    // This prevents the user's session from being persisted.
+    const dataToSave = { ...store, currentUser: null };
+    
     await fetch('/api/data', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(dataToSave),
+      body: JSON.stringify(dataToSave, null, 2),
     });
   } catch (error) {
     console.error("Couldn't save data to server.", error);

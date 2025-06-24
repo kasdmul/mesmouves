@@ -1585,12 +1585,7 @@
       "role": "superadmin"
     }
   ],
-  "currentUser": {
-    "name": "Serge Kabeya",
-    "email": "kasdmul@gmail.com",
-    "password": "123456",
-    "role": "superadmin"
-  },
+  "currentUser": null,
   "salaryHistory": [],
   "functionHistory": [],
   "contractHistory": [],
