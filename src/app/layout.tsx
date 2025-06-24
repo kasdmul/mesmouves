@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "RH Insights",
+  title: "SKFUTUR Carrière",
   description: "Tableau de Bord RH pour l'analytique de recrutement",
 };
 
