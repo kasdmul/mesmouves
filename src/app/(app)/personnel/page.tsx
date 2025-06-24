@@ -77,7 +77,7 @@ import {
 import Papa from 'papaparse';
 
 export default function PersonnelPage() {
-  const { currentUser } = useStore();
+  const { store: { currentUser } } = useStore();
 
   const [searchTerm, setSearchTerm] = React.useState('');
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
