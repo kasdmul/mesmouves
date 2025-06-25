@@ -35,7 +35,7 @@ async function readDbJson() {
 }
 
 async function getData() {
-  // For debugging, we are only using db.json
+  // We are only using db.json
   return readDbJson();
 }
 
@@ -47,9 +47,10 @@ export async function GET() {
 export async function POST(request: Request) {
   const data = await request.json();
 
-  // For debugging, we only write to db.json
+  // We only write to db.json
   try {
     const jsonPath = path.join(process.cwd(), 'db.json');
+    // Corrected from BSON.stringify to JSON.stringify
     await fs.writeFile(jsonPath, JSON.stringify(data, null, 2), 'utf-8');
     return NextResponse.json({ message: 'Data saved to db.json successfully.' });
   } catch (error) {
