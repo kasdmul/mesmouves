@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "SKFUTUR Carrière",
   description: "Tableau de Bord RH pour l'analytique de recrutement",
+  icons: {
+    icon: '/favicon.ico',
+  },
 };
 
 export default function RootLayout({
